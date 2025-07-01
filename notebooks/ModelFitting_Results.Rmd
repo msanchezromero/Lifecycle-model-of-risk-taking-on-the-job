@@ -1,0 +1,3389 @@
+---
+title: "Wealth4Health: Figures and Tables"
+author: "Martin Kerndler, Alexia Prskawetz, and Miguel Sánchez-Romero"
+date: "2022-12-10"
+output: 
+  html_document:
+    toc: true
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r message=FALSE, warning=FALSE}
+library("dplyr")
+library("maxLik")
+library("sjPlot")
+library("sjlabelled")
+library("sjmisc")
+library("ggplot2")
+library("tidyr")
+library("xtable")
+library("stargazer")
+library("ggpmisc")
+library("gridExtra")
+
+theme_set(theme_sjplot())
+
+set.seed(123)
+```
+
+### - Data from CFOI and IPUMS-US
+
+Information about both databases can be found in:
+
+1.  <https://www.bls.gov/iif/oshcfoi1.htm>
+2.  <https://usa.ipums.org/usa/>
+
+**Database:**
+
+```{r include=FALSE}
+path<-"/Dropbox/OEAW Server/Martin and Alexia/"
+
+path2<-c("RR03/")
+files<-"20221115_results_Sigma"
+Sigma<-c("0.8685")
+Lambda<-c("_Lambda612.84","_Lambda710.769996","_Lambda779.67996","_Lambda1175.69004")
+Case <-c("_")
+Simus<-c("benchmark",
+         "hretage70",
+         "hretben50",
+         "sLEhigh",
+         "hseprate",
+         "hunemben50",
+         "sLElow",
+         "sUmorthigh",
+         "sUmortlow")
+
+```
+
+```{r eval=FALSE, include=FALSE}
+for (n in 1){
+  for (k in Sigma[n]){
+    for (l in Lambda){
+      for (i in Case){
+        for (j in Simus){
+          df<-read.csv(file=paste0(path2[n],files,k,l,i,j,".csv"))
+          saveRDS(df,file=paste0(path2[n],files,k,l,i,j,".rds"))
+        }
+      }
+    }
+  }
+}
+```
+
+# US Mortality rates in year 2015 (both sexes)
+
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+#path<-"~/Dropbox/Paper Martin and Alexia/Paper  Martin, Alexia, Miguel/Programming/Version 20221115/"
+#LifeTables_US <- read_excel(paste0(path,"LifeTables_US.xlsx"), sheet ="Total (both sexes)")
+LifeTables_US <- read_excel("LifeTables_US.xlsx", sheet ="Total (both sexes)")
+
+regLT<-LifeTables_US %>% 
+  subset(Year==2015) %>% 
+  mutate(Age=as.numeric(Age)) %>% 
+  subset(Age>=20) %>% 
+  lm(formula=log(mx)~Age) 
+
+stargazer(regLT,  title="Mortality fitting", align=TRUE, type="text", out.header=TRUE)
+  
+  plot(regLT$residuals+regLT$fitted.values)
+  lines(regLT$fitted.values,col=2)
+```
+
+# Stationary Population (growth rate 0%)
+
+This is the set of parameters for the benchmark simulation
+
+```{r, echo=FALSE, warning=FALSE}
+library(flextable) #you can use another table library, if you want
+Table_Parameters<-read.csv("Results Stationary Population/Results 20240528/20221115_Par_Sigma0.8685_Lambda612.84_benchmark.csv")
+flextable(Table_Parameters)
+```
+
+## General equilibrium (Compilation of data)
+
+```{r}
+Simulations <- c("benchmark",
+                   "hretage70",
+                   "hretben50",
+                   "sLEhigh")
+Simu        <- c("Benchmark","Exp1","Exp2","Exp3")
+
+path<-"~/Dropbox/OEAW Server/Martin and Alexia/RR03/20221115_results_Sigma"
+
+dfT<- c()
+for (i in 1:length(Simulations)){
+#  i=1
+  df      <-readRDS(file=paste0(path,Sigma[1],Lambda[1],"_",Simulations[i],".rds"))
+  df$Simu <-Simu[i]
+  dfT     <-rbind(dfT,df)
+}
+dfT<-dfT %>% mutate(Age2=20+(Age-1)/12)
+
+
+```
+
+### - Age Profiles (Benchmark)
+
+Figure 3. Age profiles of annual labor income (A), wealth (B), and the
+conditional mortality on the job (C). Grey areas indicate 2.5% and 97.5%
+percentiles of the simulated distribution. Red points indicate the data.
+Case: Benchmark. Data source: CFOI, ACS, own simulations.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Change income data
+
+inc.ages<-c(20:64)
+inc.wage<-c(2119.4656,2126.424,2126.1632,2168.8336,2188.72,
+  2388.6816,2475.664,2502.7376,2566.12,2576.4912,
+  2644.072,2684.856,2678.3408,2715.6768,2730.0496,
+  2909.7344,2930.032,2968.6608,2919.544,2938.9792,
+  2976.176,2988.7936,2998.1696,3027.1472,3004.6176,
+  3030.36,3022.2048,3053.2832,3037.4208,3005.416,
+  3049.088,3064.64,3053.9472,3044.2688,3081.9312,
+  3096.9072,3122.6496,3086.7984,3091,3093.0512,
+  3049.0592,3054.36,3050.1632,2998.7936,2997.0128)
+
+
+inc.wagelow<-c(1899.555,1935.812,1962.56,2025.365,
+               2050.393,2228.502,2285.198,2325.334,
+               2363.148,2364.002,2410.928,2447.561,
+               2439.85,2481.682,2496.911,2631.989,
+               2642.081,2675.14,2621.059,2637.175,
+               2673.44,2689.062,2688.423,2711.995,
+               2694.753,2719.02,2714.095,2752.417,
+               2728.322,2719.82,2755.376,2768.307,
+               2740.702,2742.118,2749.24,2756.414,
+               2774.55,2753.729,2761.51,2725.94,
+               2729.736,2663.436,2686.991,2619.071,2643.466)
+
+inc.wagehigh<-c(2676.216,2649.775,2620.351,2621.681,
+                2654.408,2994.087,3214.443,3179.956,
+                3331.059,3385.082,3553.685,3602.22,
+                3634.531,3633.007,3608.932,3942.893,
+                3991.166,4025.641,3989.256,4023.253,
+                4069.254,4090.107,4126.373,4190.594,
+                4121.438,4157.045,4123.25,4161.691,
+                4159.839,4040.368,4087.472,4148.912,
+                4204.439,4140.462,4297.942,4336.736,
+                4374.844,4277.884,4254.392,4428.364,
+                4174.511,4377.107,4347.422,4404.752,4279.617)
+
+inc.data<-data.frame(inc.ages,inc.wage,inc.wagelow,inc.wagehigh)
+
+x.a<-c(22,30,40,50,60)
+y.a<-c(22504,42702,55620,60126,58569)
+y.b<-c(2.23,2.61,2.87,3.49,4.46)
+y.l<-c(3.5452,4.0143,4.6064,5.4541,6.6608)
+y.h<-c(0.2656,0.4711,0.5554,0.5719,0.7783)
+
+d<-data.frame(x.a,y.a,y.b,y.l,y.h)
+
+fig3.A<-dfT %>% 
+  subset((Employment==1) & (Simu=="Benchmark")) %>% 
+  ggplot(aes(x=Age2,y=Wages))+
+  geom_line(color="gray")+
+  geom_point(data=inc.data,
+             aes(x=inc.ages,y=inc.wage),color="red",cex=2)+
+  labs(x="Age",y="Monthly wage rate (in $)",tag="A")+
+  theme_bw()+
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig3.B<-dfT %>% subset(Simu=="Benchmark") %>% 
+  ggplot(aes(x=Age2,y=Assets/1000))+
+  geom_line(color="gray")+
+  labs(x="Age",y="Wealth (in $1K)",tag="B")+
+  theme_bw()+
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig3.C<-dfT %>% 
+  subset((Employment==1) & (Simu=="Benchmark")) %>%
+  ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJob/100000)))+
+  geom_line(color="gray")+
+  geom_point(data=d,aes(x=x.a,y=y.b),color="red",cex=3)+
+  xlim(20,64)+
+  labs(x="Age",y="On-the-job mortality rate (per 100k)",tag="C")+
+  theme_bw()+
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig3<-grid.arrange(fig3.A, fig3.B, fig3.C,  
+             ncol = 3, nrow = 1, heights=c(2),
+             widths=c(2,2,2))
+
+#ggsave("RR02/Figures/Stationary_Age_Profiles_G.png", fig3, width = 21*0.6, height = 7*0.6, dpi=300)
+
+
+fig3b.A<-ggplot(data=dfT %>% subset((Employment==1) & (Simu=="Exp5")),
+          aes(x=Age2,
+             y=Wages))+
+  geom_line(stat = "identity", aes(color = factor(Productivity)),cex=1.5)+
+  scale_color_manual(name="",values = c("black", "gray"))+
+  geom_point(data=inc.data,
+             aes(x=inc.ages,y=inc.wagelow),
+             color="red",cex=1)+
+  geom_point(data=inc.data,
+             aes(x=inc.ages,y=inc.wagehigh),
+             color="red",cex=1)+
+  labs(x="Age",y="Monthly wage rate (in $)",tag="A",legend="")+
+  ylim(0,5000)+
+  theme_bw()+
+  theme(legend.position  = "none",
+        panel.border     = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line        = element_line(colour = "black"))
+
+fig3b.B<-ggplot(data=dfT %>% subset(Simu=="Exp5"),
+                aes(x=Age2,y=Assets/1000))+
+  geom_line(stat="identity",
+            aes(color=factor(Productivity)))+
+  scale_color_manual(name="",values = c("black", "gray"))+
+  labs(x="Age",y="Wealth (in $1K)",tag="B")+
+  theme_bw()+
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        legend.position = "none")
+
+fig3b.C<-ggplot(data=dfT %>% subset((Employment==1) & (Simu=="Exp5")),
+         aes(x=Age2,
+             y=-100000*12*log(1-MortalityJob/100000)))+
+  geom_line(stat="identity",
+            aes(color=factor(Productivity)))+
+  scale_color_manual(name="", values = c("black", "gray"))+
+  geom_point(data=d,aes(x=x.a,y=y.l),color="red",cex=1.5)+
+  geom_point(data=d,aes(x=x.a,y=y.h),color="red",cex=1.5)+
+  xlim(20,64)+
+  labs(x="Age",
+       y="On-the-job mortality rate (per 100k)",
+       tag="C")+
+  theme_bw()+
+  theme(legend.position="none",
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig3b<-grid.arrange(fig3b.A, fig3b.B, fig3b.C,  
+             ncol = 3, nrow = 1, heights=c(2),
+             widths=c(2,2,2))
+
+#ggsave("RR02/Figures/Stationary_Age_Profiles_GBySkill.png", fig3b, dpi=300, width = 12, height = 4)
+
+
+```
+
+### - Compensating wage differentials and the value of a statistical life (VSL) (Benchmark)
+
+Table 2: Value of a statistical life overall and by age
+
+\@ All ages \@ Age 40 \@ Age 50 \@ Age 60
+
+
+If $w_{it}$ is the monthly wage rate $$
+    \log(w_{it}) = \alpha_t + \beta m_{it}  + \varepsilon_{it},
+$$
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+regCross_Check<-dfT %>% 
+  subset(Employment==1 & (Age2 %in% seq(20.0,65.0,by=1.0)) & (Simu=="Benchmark")) %>% 
+  group_by(Ind) %>% 
+  mutate(ft=0.2435+Age*(2.622/1000)-(Age^2)*(2.222/1000000)) %>%
+  lm(formula=log(Wages)~log(MortalityJob)+factor(Age2)-1)
+
+stargazer(regCross_Check,  title="Results", type="text", omit=c("Age2"))
+
+
+
+# All ages
+ tb2.all1<-dfT %>% 
+   mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+   subset(Employment==1 & (Age2 %in% c(seq(20,65))) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary()
+
+tb2.all2<-dfT %>% 
+  subset(Employment==1 & (Age2 %in% c(seq(20,64))) & (Simu=="Benchmark")) %>% 
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.all1$coefficients[1,1]*w*0.1,
+    VOL=mean(VOL)/1000000) 
+
+tb2.all<-cbind(t(tb2.all1$coefficients[1,1:2]),data.frame(tb2.all2))
+  
+# Age 40
+tb2.40_1<-dfT %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Employment==1 & (Age2==40) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+
+tb2.40_2<-dfT %>% subset(Employment==1 & (Age2==40) & (Simu=="Benchmark")) %>% 
+  summarize(
+    w=mean(Wages),    
+    VSL=tb2.40_1$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.40<-cbind(t(tb2.40_1$coefficients[2,1:2]),data.frame(tb2.40_2))
+
+# Age 50
+tb2.50_1<-dfT %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+tb2.50_2<-dfT %>% 
+  subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% 
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.50_1$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.50<-cbind(t(tb2.50_1$coefficients[2,1:2]),data.frame(tb2.50_2))
+
+# Age 60
+tb2.60_1<-dfT %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+tb2.60_2<-dfT %>% 
+  subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% 
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.60_1$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.60<-cbind(t(tb2.60_1$coefficients[2,1:2]),data.frame(tb2.60_2))
+
+tb2<-data.frame(t(tb2.all),t(tb2.40),t(tb2.50),t(tb2.60))
+tb2$Variable<-row.names(tb2)
+colnames(tb2)<-c("All","Age=40","Age=50","Age=60","Variable")
+
+tb2.final<-tb2 %>% 
+  gather(Case, Value, All:'Age=60', factor_key=TRUE) %>% 
+  spread(Variable, Value) %>%
+  select(Case,Estimate,'Std. Error',w,VSL,VOL) %>% 
+  mutate(
+    Estimate=round(Estimate,4),
+    w=round(w,0),
+    VSL=round(VSL,2),
+    VOL=round(VOL,2)) %>% 
+  gather(Variable, Value, Estimate:VOL, factor_key=TRUE) %>%
+  spread(Case, Value) 
+
+kableExtra:::kbl(
+  tb2.final,
+  booktabs = T,
+  caption="Value of a statistical life overall and by age") %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+
+Table 2b: Value of a statistical life by skill group (overall and by age)
+
+\@ All ages \@ Age 40 \@ Age 50 \@ Age 60
+
+
+If $w_{it}$ is the monthly wage rate for each skill group
+$$
+    \log(w_{it}) = \alpha_t + \beta m_{it}  + \varepsilon_{it},
+$$
+.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+dfTnew <- dfT %>% subset(Employment==1 & (Age2 %in% c(seq(20,65))) & (Simu=="Exp5"))
+
+# All ages
+tb2.all1low<-dfTnew %>% 
+   mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+   subset(Productivity==unique(dfTnew$Productivity)[1]) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary()
+
+tb2.all2low<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[1]) %>%
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.all1low$coefficients[1,1]*w*0.1,
+    VOL=mean(VOL)/1000000) 
+
+tb2.alllow<-cbind(t(tb2.all1low$coefficients[1,1:2]),data.frame(tb2.all2low))
+
+tb2.all1high<-dfTnew %>% 
+   mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+   subset(Productivity==unique(dfTnew$Productivity)[2]) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary()
+
+tb2.all2high<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[2]) %>%
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.all1high$coefficients[1,1]*w*0.1,
+    VOL=mean(VOL)/1000000) 
+
+tb2.allhigh<-cbind(t(tb2.all1high$coefficients[1,1:2]),data.frame(tb2.all2high))
+
+  
+# Age 40
+tb2.40_1low<-dfTnew %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Age2==40 & (Productivity==unique(dfTnew$Productivity)[1])) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+
+tb2.40_2low<-dfTnew %>% subset(Age2==40 & (Productivity==unique(dfTnew$Productivity)[1])) %>%
+  summarize(
+    w=mean(Wages),    
+    VSL=tb2.40_1low$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.40low<-cbind(t(tb2.40_1low$coefficients[2,1:2]),data.frame(tb2.40_2low))
+
+
+tb2.40_1high<-dfTnew %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Age2==40 & (Productivity==unique(dfTnew$Productivity)[2])) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+
+tb2.40_2high<-dfTnew %>% subset(Age2==40 & (Productivity==unique(dfTnew$Productivity)[2])) %>%
+  summarize(
+    w=mean(Wages),    
+    VSL=tb2.40_1high$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.40high<-cbind(t(tb2.40_1high$coefficients[2,1:2]),data.frame(tb2.40_2high))
+
+# Age 50
+tb2.50_1low<-dfTnew %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[1])) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+tb2.50_2low<-dfTnew %>% 
+  subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[1])) %>%
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.50_1low$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.50low<-cbind(t(tb2.50_1low$coefficients[2,1:2]),data.frame(tb2.50_2low))
+
+
+tb2.50_1high<-dfTnew %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[2])) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+tb2.50_2high<-dfTnew %>% 
+  subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[2])) %>%
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.50_1high$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.50high<-cbind(t(tb2.50_1high$coefficients[2,1:2]),data.frame(tb2.50_2high))
+  
+  
+# Age 60
+tb2.60_1low<-dfTnew %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[1])) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+tb2.60_2low<-dfTnew %>% 
+  subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[1])) %>%
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.60_1low$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.60low<-cbind(t(tb2.60_1low$coefficients[2,1:2]),data.frame(tb2.60_2low))
+
+
+tb2.60_1high<-dfTnew %>% 
+  mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[2])) %>% lm(formula=log(Wages)~MortalityJob) %>% summary()
+tb2.60_2high<-dfTnew %>% 
+  subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[2])) %>%
+  summarize(
+    w=mean(Wages),
+    VSL=tb2.60_1high$coefficients[2,1]*w*0.1,
+    VOL=mean(VOL)/1000000)
+
+tb2.60high<-cbind(t(tb2.60_1high$coefficients[2,1:2]),data.frame(tb2.60_2high))
+
+
+tb2<-data.frame(t(tb2.alllow),t(tb2.allhigh),
+                t(tb2.40low),t(tb2.40high),
+                t(tb2.50low),t(tb2.50high),
+                t(tb2.60low),t(tb2.60high))
+tb2$Variable<-row.names(tb2)
+colnames(tb2)<-c("All (low)","All (high)",
+                 "Age=40 (low)","Age=40 (high)",
+                 "Age=50 (low)","Age=50 (high)",
+                 "Age=60 (low)","Age=60 (high)",
+                 "Variable")
+
+tb2.final<-tb2 %>% 
+  gather(Case, Value, 'All (low)':'Age=60 (high)', factor_key=TRUE) %>% 
+  spread(Variable, Value) %>%
+  select(Case,Estimate,'Std. Error',w,VSL,VOL) %>% 
+  mutate(
+    Estimate=round(Estimate,4),
+    w=round(w,0),
+    VSL=round(VSL,2),
+    VOL=round(VOL,2)) %>% 
+  gather(Variable, Value, Estimate:VOL, factor_key=TRUE) %>%
+  spread(Case, Value) 
+
+kableExtra:::kbl(
+  tb2.final,
+  booktabs = T,
+  caption="Value of a statistical life overall and by age") %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+
+### - The effect of wealth on mortality and wages (Benchmark)
+
+Figure 4 (new 5): Simulated age profiles of the relationship between wealth and
+on-the-job mortality (Panel A) and the wage (Panel B) at each exact age.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fig4.A<-dfT %>% 
+  subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>% 
+  ggplot(aes(x=Assets/1000,
+             y=-100000*12*log(1-MortalityJob/100000)
+             #MortalityJob
+             ))+
+  geom_point(aes(color=as.factor(Age2)))+
+  scale_colour_brewer("Exact age")+
+  labs(x="wealth (in $1K)",y="on-the-job mortality (per 100K)",tag="(A)")+
+  theme_bw()+
+  theme(legend.position = c(0.2, 0.85),
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig4.B<-dfT %>% 
+  subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>% 
+  ggplot(aes(x=Assets/1000,y=Wages))+
+  geom_point(aes(color=as.factor(Age2)))+
+  scale_colour_brewer("Exact age")+
+  labs(x="wealth (in $1K)",y="wage (in $)",tag="(B)")+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig4<-grid.arrange(fig4.A, fig4.B, 
+             ncol = 2, nrow = 1, heights=c(3), widths=c(3,3))
+
+ggsave("RR02/Figures/Stationary_Wealth4Health_G.png", fig4, width = 12.0, height =4.0, dpi=300)
+
+fig4
+```
+
+Figure 4b (new 5): Simulated age profiles by skill group of the relationship between wealth and
+on-the-job mortality (Panel A) and the wage (Panel B) at each exact age.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+dfTnew<- dfT %>% 
+  subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Exp5"))
+
+fig4b.Alow<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[1]) %>% 
+  ggplot(aes(x=Assets/1000,
+             y=-100000*12*log(1-MortalityJob/100000)
+#             y=MortalityJob
+             ))+
+  geom_point(aes(color=as.factor(Age2)))+
+  scale_colour_brewer("Exact age")+
+  labs(x="wealth (in $1K)",
+       y="on-the-job mortality (per 100K)",
+       title="Low skilled",
+       tag="(A)")+
+  theme_bw()+
+  theme(legend.position = c(0.2, 0.65),
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig4b.Ahigh<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[2]) %>% 
+  ggplot(aes(x=Assets/1000,
+             y=-100000*12*log(1-MortalityJob/100000)
+ #            y=MortalityJob
+             ))+
+  geom_point(aes(color=as.factor(Age2)))+
+  scale_colour_brewer("Exact age")+
+  labs(x="wealth (in $1K)",
+       y="on-the-job mortality (per 100K)",
+       title="High skilled",       
+       tag="(C)")+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+
+fig4b.Blow<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[1]) %>%  
+  ggplot(aes(x=Assets/1000,y=Wages))+
+  geom_point(aes(color=as.factor(Age2)))+
+  scale_colour_brewer("Exact age")+
+  labs(x="wealth (in $1K)",
+       y="wage (in $)",
+       title="Low skilled",       
+       tag="(B)")+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig4b.Bhigh<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[2]) %>%  
+  ggplot(aes(x=Assets/1000,y=Wages))+
+  geom_point(aes(color=as.factor(Age2)))+
+  scale_colour_brewer("Exact age")+
+  labs(x="wealth (in $1K)",
+       y="wage (in $)",
+       title="High skilled",       
+       tag="(D)")+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig4b<-grid.arrange(fig4b.Alow, fig4b.Blow, fig4b.Ahigh, fig4b.Bhigh,  
+             ncol = 2, nrow = 2, heights=c(3,3), widths=c(3,3))
+
+ggsave("RR02/Figures/Stationary_Wealth4Health_G_BySkill.png", fig4b, width = 12.0, height =8.0)
+
+fig4b
+```
+
+
+With the probability of dying at each month $$
+    \log(m_{it})   = \alpha_m +\beta_m \log(a_{it}) + u_{it},\\
+    \log({w_{it}}) = \alpha_w +\beta_w \log(a_{it}) + v_{it},
+$$
+
+Table 3: Marginal effect of wealth on on-the-job mortality and wages
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# log(MortalityJob)~log(Assets)
+# Age 50
+ols.1<-dfT %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) 
+# Age 55
+ols.2<-dfT %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) 
+# Age 60
+ols.3<-dfT %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) 
+
+# log(Wages)~log(Assets)
+# Age 50
+olsW.1<-dfT %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets))
+# Age 55
+olsW.2<-dfT %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets))
+# Age 60
+olsW.3<-dfT %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets))
+
+stargazer(ols.1,  ols.2,  ols.3,  title="Results", align=TRUE, type="text", out.header=TRUE)
+stargazer(olsW.1, olsW.2, olsW.3, title="Results", align=TRUE, type="text", out.header=TRUE)
+
+```
+
+
+Table 3b: Marginal effect of wealth on on-the-job mortality and wages by skill group
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# log(MortalityJob)~log(Assets)
+
+dfTnew<-dfT %>% subset(Employment==1 & (Simu=="Exp5"))
+
+# Age 50
+ols.1a<-dfTnew %>% subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[1])) %>% 
+  lm(formula=log(MortalityJob)~log(Assets)) 
+ols.1b<-dfTnew %>% subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[2])) %>% 
+  lm(formula=log(MortalityJob)~log(Assets))
+# Age 55
+ols.2a<-dfTnew %>% subset(Age2==55 & (Productivity==unique(dfTnew$Productivity)[1])) %>% 
+  lm(formula=log(MortalityJob)~log(Assets)) 
+ols.2b<-dfTnew %>% subset(Age2==55 & (Productivity==unique(dfTnew$Productivity)[2])) %>% 
+  lm(formula=log(MortalityJob)~log(Assets)) 
+# Age 60
+ols.3a<-dfTnew %>% subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[1])) %>%  
+  lm(formula=log(MortalityJob)~log(Assets)) 
+ols.3b<-dfTnew %>% subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[2])) %>% 
+  lm(formula=log(MortalityJob)~log(Assets)) 
+
+# log(Wages)~log(Assets)
+# Age 50
+olsW.1a<-dfTnew %>% subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[1])) %>% 
+  lm(formula=log(Wages)~log(Assets)) 
+olsW.1b<-dfTnew %>% subset(Age2==50 & (Productivity==unique(dfTnew$Productivity)[2])) %>% 
+  lm(formula=log(Wages)~log(Assets))
+# Age 55
+olsW.2a<-dfTnew %>% subset(Age2==55 & (Productivity==unique(dfTnew$Productivity)[1])) %>% 
+  lm(formula=log(Wages)~log(Assets)) 
+olsW.2b<-dfTnew %>% subset(Age2==55 & (Productivity==unique(dfTnew$Productivity)[2])) %>% 
+  lm(formula=log(Wages)~log(Assets)) 
+# Age 60
+olsW.3a<-dfTnew %>% subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[1])) %>%  
+  lm(formula=log(Wages)~log(Assets)) 
+olsW.3b<-dfTnew %>% subset(Age2==60 & (Productivity==unique(dfTnew$Productivity)[2])) %>% 
+  lm(formula=log(Wages)~log(Assets)) 
+
+stargazer(ols.1a,  ols.1b, ols.2a, ols.2b,  ols.3a, ols.3b,  title="Results", align=TRUE, type="text", out.header=TRUE)
+stargazer(olsW.1a,  olsW.1b, olsW.2a, olsW.2b,  olsW.3a, olsW.3b, title="Results", align=TRUE, type="text", out.header=TRUE)
+
+```
+
+With the on-the-job mortality rate $$
+    \log(\mu_{it})   = \alpha_m +\beta_m \log(a_{it}) + u_{it},\\
+    \log({w_{it}}) = \alpha_w +\beta_w \log(a_{it}) + v_{it},
+$$
+
+Table 3c: Marginal effect of wealth on on-the-job mortality and wages
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# log(MortalityJob)~log(Assets)
+# Age 50
+ols.1<-dfT %>% 
+      mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+      subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% 
+      lm(formula=log(Mx)~log(Assets)) 
+# Age 55
+ols.2<-dfT %>% 
+      mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+      subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>%
+      lm(formula=log(Mx)~log(Assets)) 
+# Age 60
+ols.3<-dfT %>% 
+      mutate(Mx=-100000*12*log(1-MortalityJob/100000)) %>%
+      subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>%   
+      lm(formula=log(Mx)~log(Assets)) 
+
+# log(Wages)~log(Assets)
+# Age 50
+olsW.1<-dfT %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets))
+# Age 55
+olsW.2<-dfT %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets))
+# Age 60
+olsW.3<-dfT %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets))
+
+stargazer(ols.1,  ols.2,  ols.3,  title="Results", align=TRUE, type="text", out.header=TRUE)
+stargazer(olsW.1, olsW.2, olsW.3, title="Results", align=TRUE, type="text", out.header=TRUE)
+
+```
+
+### - Person-years worked
+
+The person-years worked until age $R$ of an individual belonging to the
+i-th group is given by 
+$$
+\begin{align}
+\text{PYW}_i(t)&=\int_t^R e_i(x)\frac{l_i(x)}{l_i(t)}dx=E_i(t)-\int_t^R  e_i(x)\left(1-\frac{l_i(x)}{l_i(t)}\right)dx\\
+&=E_i(t)-\int_t^R  e_i(x)\left(\int_t^x \frac{d_i(u)}{l_i(t)}du\right)dx=E_i(t)-\int_t^R  e_i(x)\frac{D_i(t,x)}{l_i(t)}dx
+\end{align}
+$$ 
+where $e_i(x)$ is an indicator function that takes the value of one
+when the individual is working and zero otherwise, $l_i(x)$ is the
+probability of surviving from age 0 to age $x$, $E_i$ is the total
+number of years worked until age $R$ conditional on being alive,
+$d_i(x)$ is the fraction of people dying at age $x$ that belong to the
+i-th group, and $D_i(x)$ is the total number of person-years lost until
+age $x$ that belong to the i-th group. The last expression is convenient
+because the fraction of people dying at each age $x$ is the sum of
+people dying at each age $x$ due to the different risks
+$d_i(x)=d_{iB}(x)+d_{iU}(x)+d_{iJ}(x)$, with
+$d_{ij}(x)=\mu_{ij}(x)l_{i}(x)$, where $\mu_{ij}(x)$ is the mortality
+hazard rate associated to risk $j$. As a result, we can also express the
+person-years worked as the sum of the different components $$
+\begin{gather}
+\text{PYW}_{i}=E_i-(A_{iB}+A_{iU}+A_{iJ}),
+\end{gather}
+$$ where $A_{ij}=\int_0^R e_i(x) D_{ij}(x)dx$ for $j\in\{B,U,J\}$.
+
+Table 4: Decomposition of average person-years worked before age 65
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+popgrowth<-1.00^(1/12)
+
+ThresholdAge<-20
+
+tb4<-dfT %>% subset(Age2<65-2/12 & (Age2>=ThresholdAge)) %>% 
+  select(Simu,Ind,Age,Age2,Employment,Mortality,MortalityJob,Survival) %>% 
+  group_by(Simu,Ind) %>% 
+  mutate(popC=popgrowth^(1-Age),
+              ei  =Employment,
+              ui  =1-Employment,
+              dBi =Survival*(Mortality-MortalityJob)/100000,
+              dUi =Survival*(MortalityJob/100000)*ui,
+              dJi =Survival*(MortalityJob/100000)*ei,
+              eili=Survival*ei) %>% 
+  group_by(Simu,Ind) %>% 
+    mutate(DB=cumsum(dBi),
+           DU=cumsum(dUi),
+           DJ=cumsum(dJi)) %>% 
+  group_by(Simu,Ind) %>% 
+    summarize(
+      PYWi=sum(eili)*(1/12)/Survival[Age2==ThresholdAge],
+      Ei  =sum(ei)*(1/12),
+      Bi  =sum(ei*DB)*(1/12)/Survival[Age2==ThresholdAge],
+      Ui  =sum(ei*DU)*(1/12)/Survival[Age2==ThresholdAge],
+      Ji  =sum(ei*DJ)*(1/12)/Survival[Age2==ThresholdAge]) %>% 
+  group_by(Simu) %>%
+    summarize(
+      PYW=round(mean(PYWi),4),
+      E=round(mean(Ei),4),
+      B=-round(mean(Bi),4),
+      U=-round(mean(Ui),4),
+      J=-round(mean(Ji),4)) %>% 
+  gather(Variable, Value, PYW:J, factor_key=TRUE) %>% 
+  spread(Simu, Value) 
+
+
+ThresholdAge2<-50
+
+tb4b<-dfT %>% subset(Age2<65-2/12 & (Age2>=ThresholdAge2)) %>% 
+  select(Simu,Ind,Age,Age2,Employment,Mortality,MortalityJob,Survival) %>% 
+  group_by(Simu,Ind) %>% 
+  mutate(popC=popgrowth^(1-Age),
+              ei  =Employment,
+              ui  =1-Employment,
+              dBi =Survival*(Mortality-MortalityJob)/100000,
+              dUi =Survival*(MortalityJob/100000)*ui,
+              dJi =Survival*(MortalityJob/100000)*ei,
+              eili=Survival*ei) %>% 
+  group_by(Simu,Ind) %>% 
+    mutate(DB=cumsum(dBi),
+           DU=cumsum(dUi),
+           DJ=cumsum(dJi)) %>% 
+  group_by(Simu,Ind) %>% 
+    summarize(
+      PYWi=sum(eili)*(1/12)/Survival[Age2==ThresholdAge2],
+      Ei  =sum(ei)*(1/12),
+      Bi  =sum(ei*DB)*(1/12)/Survival[Age2==ThresholdAge2],
+      Ui  =sum(ei*DU)*(1/12)/Survival[Age2==ThresholdAge2],
+      Ji  =sum(ei*DJ)*(1/12)/Survival[Age2==ThresholdAge2]) %>% 
+  group_by(Simu) %>%
+    summarize(
+      PYW=round(mean(PYWi),4),
+      E=round(mean(Ei),4),
+      B=-round(mean(Bi),4),
+      U=-round(mean(Ui),4),
+      J=-round(mean(Ji),4)) %>% 
+  gather(Variable, Value, PYW:J, factor_key=TRUE) %>% 
+  spread(Simu, Value) 
+
+ThresholdAge3<-55
+
+tb4c<-dfT %>% subset(Age2<65-2/12 & (Age2>=ThresholdAge3)) %>% 
+  select(Simu,Ind,Age,Age2,Employment,Mortality,MortalityJob,Survival) %>% 
+  group_by(Simu,Ind) %>% 
+  mutate(popC=popgrowth^(1-Age),
+              ei  =Employment,
+              ui  =1-Employment,
+              dBi =Survival*(Mortality-MortalityJob)/100000,
+              dUi =Survival*(MortalityJob/100000)*ui,
+              dJi =Survival*(MortalityJob/100000)*ei,
+              eili=Survival*ei) %>% 
+  group_by(Simu,Ind) %>% 
+    mutate(DB=cumsum(dBi),
+           DU=cumsum(dUi),
+           DJ=cumsum(dJi)) %>% 
+  group_by(Simu,Ind) %>% 
+    summarize(
+      PYWi=sum(eili)*(1/12)/Survival[Age2==ThresholdAge3],
+      Ei  =sum(ei)*(1/12),
+      Bi  =sum(ei*DB)*(1/12)/Survival[Age2==ThresholdAge3],
+      Ui  =sum(ei*DU)*(1/12)/Survival[Age2==ThresholdAge3],
+      Ji  =sum(ei*DJ)*(1/12)/Survival[Age2==ThresholdAge3]) %>% 
+  group_by(Simu) %>%
+    summarize(
+      PYW=round(mean(PYWi),4),
+      E=round(mean(Ei),4),
+      B=-round(mean(Bi),4),
+      U=-round(mean(Ui),4),
+      J=-round(mean(Ji),4)) %>% 
+  gather(Variable, Value, PYW:J, factor_key=TRUE) %>% 
+  spread(Simu, Value) 
+
+ThresholdAge4<-60
+
+tb4d<-dfT %>% subset(Age2<65-2/12 & (Age2>=ThresholdAge4)) %>% 
+  select(Simu,Ind,Age,Age2,Employment,Mortality,MortalityJob,Survival) %>% 
+  group_by(Simu,Ind) %>% 
+  mutate(popC=popgrowth^(1-Age),
+              ei  =Employment,
+              ui  =1-Employment,
+              dBi =Survival*(Mortality-MortalityJob)/100000,
+              dUi =Survival*(MortalityJob/100000)*ui,
+              dJi =Survival*(MortalityJob/100000)*ei,
+              eili=Survival*ei) %>% 
+  group_by(Simu,Ind) %>% 
+    mutate(DB=cumsum(dBi),
+           DU=cumsum(dUi),
+           DJ=cumsum(dJi)) %>% 
+  group_by(Simu,Ind) %>% 
+    summarize(
+      PYWi=sum(eili)*(1/12)/Survival[Age2==ThresholdAge4],
+      Ei  =sum(ei)*(1/12),
+      Bi  =sum(ei*DB)*(1/12)/Survival[Age2==ThresholdAge4],
+      Ui  =sum(ei*DU)*(1/12)/Survival[Age2==ThresholdAge4],
+      Ji  =sum(ei*DJ)*(1/12)/Survival[Age2==ThresholdAge4]) %>% 
+  group_by(Simu) %>%
+    summarize(
+      PYW=round(mean(PYWi),4),
+      E=round(mean(Ei),4),
+      B=-round(mean(Bi),4),
+      U=-round(mean(Ui),4),
+      J=-round(mean(Ji),4)) %>% 
+  gather(Variable, Value, PYW:J, factor_key=TRUE) %>% 
+  spread(Simu, Value) 
+
+kableExtra:::kbl(
+  tb4,
+  booktabs = T,
+  caption=paste0("Table 4: Decomposition of average person-years worked at age ",ThresholdAge," (before age 65)")) %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+kableExtra:::kbl(
+  tb4b,
+  booktabs = T,
+  caption=paste0("Table 4b: Decomposition of average person-years worked at age ",ThresholdAge2," (before age 65)")) %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+kableExtra:::kbl(
+  tb4c,
+  booktabs = T,
+  caption=paste0("Table 4c: Decomposition of average person-years worked at age ",ThresholdAge3," (before age 65)")) %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+kableExtra:::kbl(
+  tb4d,
+  booktabs = T,
+  caption=paste0("Table 4d: Decomposition of average person-years worked at age ",ThresholdAge4," (before age 65)")) %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+```
+
+### - The effect of labor and retirement policies
+
+Figure 5: Simulated age profiles of on-the-job mortality in four
+alternative simulations. Experiment I: higher retirement age; Experiment
+II: higher retirement benefits; Experiment III: higher life expectancy.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fig5<-dfT %>% subset(Employment==1 & !(Simu %in% c("Exp4","Exp5","Exp6","Exp7","Exp8"))) %>% 
+  mutate(Simulation=Simu) %>% group_by(Simulation,Age2) %>% summarize(MortalityJ=mean(MortalityJob)) %>% ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+
+  geom_line(aes(color=Simulation,linetype=Simulation),cex=0.75)+
+  scale_color_discrete(
+    name="Simulation",
+    breaks=c("Benchmark","Exp1","Exp2","Exp3"),
+    labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+
+  scale_linetype_discrete(
+    name="Simulation",
+    breaks=c("Benchmark","Exp1","Exp2","Exp3"),
+    labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+
+    xlim(20,64)+
+  labs(
+    x="Age",
+    y="On-the-job mortality rate (per 100K)")+
+  theme_bw()+
+  theme(legend.position = c(0.20, 0.70),
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+ggsave("RR02/Figures/Stationary_MortalityProfile_G.png", fig5, width = 10*0.6, height =7*0.6)
+fig5
+```
+
+Figure 5: Simulated age profiles of on-the-job mortality in four
+alternative simulations. Experiment VI: higher retirement age; Experiment
+VII: higher retirement benefits; Experiment VIII: higher life expectancy.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+
+dfTnew<-dfT %>% 
+  subset(Employment==1 & 
+           (Simu %in% c("Exp5","Exp6","Exp7","Exp8")))
+
+fig5ba<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[1]) %>% 
+#  mutate(Simulation=Simu) %>% 
+  group_by(Simu,Age2) %>%
+  summarize(MortalityJ=mean(MortalityJob)) %>%
+  ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+
+  geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+
+  scale_color_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+
+  scale_linetype_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+
+    xlim(20,64)+
+  labs(
+    x="Age",
+    y="On-the-job mortality rate (per 100K)",
+    title="Low-skilled")+
+  theme_bw()+
+  theme(legend.position = c(0.85, 0.30),
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig5bb<-dfTnew %>% 
+  subset(Productivity==unique(dfTnew$Productivity)[2]) %>% 
+#  mutate(Simulation=Simu) %>% 
+  group_by(Simu,Age2) %>%
+  summarize(MortalityJ=mean(MortalityJob)) %>%
+  ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+
+  geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+
+  scale_color_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+
+  scale_linetype_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+
+    xlim(20,64)+
+  labs(
+    x="Age",
+    y="On-the-job mortality rate (per 100K)",
+    title="High-skilled")+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig5bc<-dfTnew %>% 
+  group_by(Simu,Productivity,Age2) %>%
+  mutate(MortalityJ=mean(MortalityJob),
+         Mort=-100000*12*log(1-MortalityJ/100000)) %>%
+  group_by(Simu,Age2) %>%  
+  summarize(Mort2=Mort[Productivity==unique(dfTnew$Productivity)[1]]-Mort[Productivity==unique(dfTnew$Productivity)[2]]) %>%
+  ggplot(aes(x=Age2,y=Mort2))+
+  geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+
+  scale_color_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Exp. V","Exp. VI","Exp. VII","Exp. VIII"))+
+  scale_linetype_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Exp. V","Exp. VI","Exp. VII","Exp. VIII"))+
+    xlim(20,64)+
+  labs(
+    x="Age",
+    y="Rate (per 100K)",
+    title="Difference btw low-skilled and high-skilled workers")+
+  theme_bw()+
+  theme(legend.position = "", #c(0.85, 0.30),
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+fig5b<-grid.arrange(fig5ba, fig5bb, fig5bc, 
+             ncol = 1, nrow = 3, heights=c(3,3,3), widths=c(3))
+
+ggsave("RR02/Figures/Stationary_MortalityProfile_GBySkill.png", fig5b, width = 7.5*0.8, height =4.0*3*0.8, dpi=300)
+fig5b
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+
+dfTnew<-dfT %>% 
+  subset(Employment==1 & 
+           (Simu %in% c("Exp5","Exp6","Exp7","Exp8")))
+
+fig5c<-dfTnew %>% 
+#  subset(Productivity==unique(dfTnew$Productivity)[1]) %>% 
+#  mutate(Simulation=Simu) %>% 
+  group_by(Simu,Productivity,Age2) %>%
+  mutate(MortalityJ=mean(MortalityJob),
+         Mort=-100000*12*log(1-MortalityJ/100000)) %>%
+  group_by(Simu,Age2) %>%  
+  summarize(Mort2=Mort[Productivity==unique(dfTnew$Productivity)[1]]-Mort[Productivity==unique(dfTnew$Productivity)[2]]) %>%
+  ggplot(aes(x=Age2,y=Mort2))+
+  geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+
+  scale_color_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Exp. V","Exp. VI","Exp. VII","Exp. VIII"))+
+  scale_linetype_discrete(
+    name="Simulation",
+    breaks=c("Exp5","Exp6","Exp7","Exp8"),
+    labels=c("Exp. V","Exp. VI","Exp. VII","Exp. VIII"))+
+    xlim(20,64)+
+  labs(
+    x="Age",
+    y="Rate (per 100K)",
+    title="On-the-job mortality rate difference\n btw low skilled and high skilled workers")+
+  theme_bw()+
+  theme(legend.position = c(0.85, 0.30),
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+#fig5b<-grid.arrange(fig5ba, fig5bb,  
+#             ncol = 1, nrow = 2, heights=c(3,3), widths=c(3))
+
+ggsave("RR02/Figures/Stationary_MortalityProfile_GDiffBySkill.png", fig5c, width = 6.5*0.8, height =4.0*0.8)
+fig5c
+```
+
+Figure 6: Relationship between wealth and on-the-job mortality at age 55
+in four alternative simulations. Experiment I: higher retirement age;
+Experiment II: higher retirement benefits; Experiment III: higher life
+expectancy.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fig6<-dfT %>% subset(Employment==1 & (Age2==55)) %>%  ggplot(aes(x=Assets/1000,y=MortalityJob,color=Simu))+geom_point()+
+  scale_color_discrete(
+    name="Simulation",
+    breaks=c("Benchmark","Exp1","Exp2","Exp3","Exp4","Exp5"),
+    labels=c("Benchmark","Exp. I","Exp. II","Exp. III","Exp. IV","Exp. V"))+
+  labs(
+    x="wealth (in $1K)",
+    y="On-the-job mortality rate (per 100K)")+
+  theme_bw()+
+  theme(legend.position= "right",
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+ggsave("RR02/Figures/Stationary_Wealth4Death_G.png", fig6, width = 6.5, height =4.5)
+fig6
+```
+
+### - Table A.2
+
+Table A2: Descriptive statistics of four alternative simulations
+(Period: Month)
+
+```{r echo=FALSE}
+
+# Our simulations are based on a stationary population with 500 new individuals born each month. For simplicity, we standardized the values in the Table to 1000 individuals annually.
+AdjFactor<-(1000/(12*500))
+popgrowth<-1.00^(1/12)
+
+tblA4.top<-dfT %>% subset(Simu!=c("Exp4")) %>%
+  mutate(popC=popgrowth^(1-Age)) %>%
+  group_by(Simu) %>% 
+  summarize(
+    N=round(sum(Survival*popC)*AdjFactor,0),
+    L=round(sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor,0),
+    U=round(sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor,0),
+    R=round(sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor,0),
+    U_rate=round(100*U/(L+U),2)) %>%   
+  gather(Variable, Value, N:U_rate, factor_key=TRUE) %>% 
+  spread(Simu, Value) 
+
+kableExtra:::kbl(
+  tblA4.top,
+  booktabs = T,
+  caption="Table A2: Descriptive statistics of four alternative simulations (Period: Month)") %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+
+tblA4.bottom<-dfT %>% subset(Simu!="Exp4") %>% 
+  mutate(popC  =popgrowth^(1-Age),
+         weight=Survival*popC/sum(Survival*popC),
+         weight1 = 1,
+         Mx    =-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Employment==1 & (Age2<65.0)) %>% 
+  mutate(F.L=Wages/Output) %>% 
+  group_by(Simu) %>% 
+  summarize(
+    mT.mean  =round(weighted.mean(Mortality,w=weight),2),
+    mT.sd    =round(radiant.data::weighted.sd(x = Mortality, wt = weight),2),
+    m.mean   =round(weighted.mean(MortalityJob,w=weight),2),
+    m.sd     =round(radiant.data::weighted.sd(x = MortalityJob, wt = weight),2),
+    mu.mean  =round(weighted.mean(Mx,w=weight),2),
+    mu.sd    =round(radiant.data::weighted.sd(x = Mx, wt = weight),2),
+    w.mean   =round(weighted.mean(Wages,w=weight),0),
+    w.sd     =round(radiant.data::weighted.sd(x = Wages, wt = weight),0),
+    y.mean   =round(weighted.mean(Wages/0.66,w=weight),0),
+    y.sd     =round(radiant.data::weighted.sd(x = Wages/0.66, wt = weight),0),
+    c.mean   =round(weighted.mean(Consumption,w=weight),0),
+    c.sd     =round(radiant.data::weighted.sd(x = Consumption, wt = weight),0),
+    a.mean   =round(weighted.mean(Assets,w=weight)/1000,0),
+    a.sd     =round(radiant.data::weighted.sd(x = Assets, wt = weight)/1000,0),
+#    K.mean   =round(sum(Assets*Survival*popC)/1000,0),
+#    K.sd     =round(radiant.data::weighted.sd(x = Assets*Survival*popC, wt = weight1)/1000,0),
+    vol.mean =round(weighted.mean(VOL,w=weight)/1000,0),
+    vol.sd   =round(radiant.data::weighted.sd(x = VOL, wt = weight)/1000,0),
+    t.mean   =weighted.mean(Tax,w=weight),
+    r.mean   =round(100*(0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)),2)) %>%  
+  gather(Variable, Value, mT.mean:r.mean, factor_key=TRUE) 
+
+tblA4.bottom$type<-c(rep(c(rep("Mean",8),rep("SD",8)),8),rep(c(rep("Mean",8)),2))
+tblA4.bottom<-tblA4.bottom %>% mutate(Variable=case_when(
+    Variable=="mT.mean"  ~ "1.mT",
+    Variable=="mT.sd"    ~ "1.mT",
+    Variable=="m.mean"   ~ "2.m",
+    Variable=="m.sd"     ~ "2.m",
+    Variable=="mu.mean"  ~ "3.mu",
+    Variable=="mu.sd"    ~ "3.mu",
+    Variable=="w.mean"   ~ "4.w",
+    Variable=="w.sd"     ~ "4.w",
+    Variable=="y.mean"   ~ "5.y",
+    Variable=="y.sd"     ~ "5.y",    
+    Variable=="c.mean"   ~ "6.c",
+    Variable=="c.sd"     ~ "6.c",    
+    Variable=="a.mean"   ~ "7.a",
+    Variable=="a.sd"     ~ "7.a",
+    #Variable=="K.mean"   ~ "11.a",
+    #Variable=="K.sd"     ~ "11.a",    
+    Variable=="vol.mean" ~ "8.vol",
+    Variable=="vol.sd"   ~ "8.vol",    
+    Variable=="t.mean"   ~ "9.t",
+    Variable=="r.mean"   ~ "10.r")) %>% spread(type, Value) 
+
+kableExtra:::kbl(
+  cbind(
+    tblA4.bottom %>% subset(Simu=="Benchmark") %>% select(Variable,Mean,SD),
+    tblA4.bottom %>% subset(Simu=="Exp1") %>% select(Mean,SD),
+    tblA4.bottom %>% subset(Simu=="Exp2") %>% select(Mean,SD),
+    tblA4.bottom %>% subset(Simu=="Exp3") %>% select(Mean,SD),
+    tblA4.bottom %>% subset(Simu=="Exp5") %>% select(Mean,SD)),
+  booktabs = T,
+  col.names=c("",paste0(rep(c("Mean","SD"),5))),
+  caption="Table A2: Descriptive statistics of four alternative simulations (Period: Month)") %>%
+  kableExtra:::add_header_above(c("", "Benchmark" = 2, "Exp1"=2,"Exp2"=2,"Exp3"=2, "Exp5"=2)) %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+```
+
+
+Table A2b: Descriptive statistics of Exp 5 under different skill groups
+(Period: Month)
+
+```{r echo=FALSE}
+
+# Our simulations are based on a stationary population with 500 new individuals born each month. For simplicity, we standardized the values in the Table to 1000 individuals annually.
+AdjFactor<-(1000/(12*500))
+popgrowth<-1.00^(1/12)
+
+tblA4b.top<-dfT %>% subset(Simu %in% c("Exp5","Exp6","Exp7","Exp8")) %>%
+  mutate(popC=popgrowth^(1-Age)) %>%
+  group_by(Simu,Productivity) %>% 
+  summarize(
+    N=round(sum(Survival*popC)*AdjFactor,0),
+    L=round(sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor,0),
+    U=round(sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor,0),
+    R=round(sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor,0),
+    U_rate=round(100*U/(L+U),2)) %>%   
+  gather(Variable, Value, N:U_rate, factor_key=TRUE) %>% 
+  spread(Simu, Value) 
+
+kableExtra:::kbl(
+  tblA4b.top,
+  booktabs = T,
+  caption="Table A2: Descriptive statistics of Experiment 5 by skill group (Period: Month)") %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+
+tblA4b.bottom<-dfT %>% subset(Simu %in% c("Exp5","Exp6","Exp7","Exp8")) %>% 
+  mutate(popC  =popgrowth^(1-Age),
+         weight=Survival*popC/sum(Survival*popC),
+         Mx    =-100000*12*log(1-MortalityJob/100000)) %>%
+  subset(Employment==1 & (Age2<65.0)) %>% 
+  mutate(F.L=Wages/Output) %>% 
+  group_by(Simu,Productivity) %>% 
+  summarize(
+    mT.mean=round(weighted.mean(Mortality,w=weight),2),
+    mT.sd=round(radiant.data::weighted.sd(x = Mortality, wt = weight),2),
+    m.mean=round(weighted.mean(MortalityJob,w=weight),2),
+    m.sd=round(radiant.data::weighted.sd(x = MortalityJob, wt = weight),2),
+    mu.mean=round(weighted.mean(Mx,w=weight),2),
+    mu.sd=round(radiant.data::weighted.sd(x = Mx, wt = weight),2),
+    w.mean=round(weighted.mean(Wages,w=weight),0),
+    w.sd=round(radiant.data::weighted.sd(x = Wages, wt = weight),0),
+    y.mean=round(weighted.mean(Wages/0.66,w=weight),0),
+    y.sd=round(radiant.data::weighted.sd(x = Wages/0.66, wt = weight),0),
+    c.mean=round(weighted.mean(Consumption,w=weight),0),
+    c.sd=round(radiant.data::weighted.sd(x = Consumption, wt = weight),0),
+    a.mean=round(weighted.mean(Assets,w=weight)/1000,0),
+    a.sd=round(radiant.data::weighted.sd(x = Assets, wt = weight)/1000,0),
+    vol.mean=round(weighted.mean(VOL,w=weight)/1000,0),
+    vol.sd=round(radiant.data::weighted.sd(x = VOL, wt = weight)/1000,0),
+    t.mean=weighted.mean(Tax,w=weight),
+    r.mean=round(100*(0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)),2)) %>%  
+  gather(Variable, Value, mT.mean:r.mean, factor_key=TRUE) 
+
+tblA4b.bottom$type<-c(rep(c(rep("Mean",8),rep("SD",8)),8),rep(c(rep("Mean",8)),2))
+tblA4b.bottom<-tblA4b.bottom %>% mutate(Variable=case_when(
+    Variable=="mT.mean" ~ "1.mT",
+    Variable=="mT.sd" ~ "1.mT",
+    Variable=="m.mean" ~ "2.m",
+    Variable=="m.sd" ~ "2.m",
+    Variable=="mu.mean" ~ "3.mu",
+    Variable=="mu.sd" ~ "3.mu",
+    Variable=="w.mean" ~ "4.w",
+    Variable=="w.sd" ~ "4.w",
+    Variable=="y.mean" ~ "5.y",
+    Variable=="y.sd" ~ "5.y",    
+    Variable=="c.mean" ~ "6.c",
+    Variable=="c.sd" ~ "6.c",    
+    Variable=="a.mean" ~ "7.a",
+    Variable=="a.sd" ~ "7.a",    
+    Variable=="vol.mean" ~ "8.vol",
+    Variable=="vol.sd" ~ "8.vol",    
+    Variable=="t.mean" ~ "9.t",
+    Variable=="r.mean" ~ "10.r")) %>% spread(type, Value) 
+
+
+kableExtra:::kbl(
+  cbind(
+    tblA4b.bottom %>% subset(Productivity==unique(tblA4b.bottom$Productivity)[1]) %>% select(Variable,Mean,SD),
+    tblA4b.bottom %>% subset(Productivity==unique(tblA4b.bottom$Productivity)[2]) %>% select(Mean,SD)
+        ),
+  booktabs = T,
+  col.names=c("",paste0(rep(c("Mean","SD"),3))),
+  caption="Table A2: Descriptive statistics of Experiment 5 by skill group (Period: Month)") %>%
+  kableExtra:::add_header_above(c("", "Low skilled"=3, "High skilled"=3)) %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+```
+
+$$
+\begin{align}
+F  &=K^\alpha H^{1-\alpha},\\
+F_H&=w/y,\\
+r  &=\alpha\left(\frac{1-\alpha}{F_H}\right)^\frac{1-\alpha}{\alpha}-\delta.
+\end{align}
+$$
+
+### - Welfare analysis
+
+We find the value of $\lambda^R$ such that $$
+\operatorname{\bf E}_0\left[\sum_{t=0}^\Omega \left(\prod_{s=0}^t {\bf \pi}^B_s(x)\right)U(c^B_t|x)\right]=\operatorname{\bf E}_0\left[\sum_{t=0}^\Omega \left(\prod_{s=0}^t {\bf \pi}^R_s(x)\right)U\left((1-\lambda^R)c^R_t\middle|x\right)\right]
+$$
+
+```{r message=FALSE, warning=FALSE}
+sigmaG = as.numeric(Sigma) # This is the value of sigma_G
+tbl5<-dfT %>% subset(Age<1200 & !(Simu %in% c("Exp4","Exp5","Exp6","Exp7","Exp8"))) %>%
+  group_by(Simu,Ind) %>% 
+    mutate(
+      IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
+      IUtil.d=Survival*(Consumption^(1-1/sigmaG))/(1-1/sigmaG)
+      ) %>% 
+  group_by(Simu,Ind) %>% 
+    summarize(
+      #LE     =sum(Survival)/12,
+      EUtil  =sum(IUtil)/Survival[Age2==20],
+      EUtil.d=sum(IUtil.d)/Survival[Age2==20]) %>% 
+  group_by(Ind) %>% 
+    mutate(Li=1-(1+(EUtil[Simu=="Benchmark"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
+  group_by(Simu) %>% 
+    summarize(
+      Lambda.min =round(100*min(Li),2),
+      Lambda.mean=round(100*mean(Li),2),
+      Lambda.max =round(100*max(Li),2))
+
+kableExtra:::kbl(
+  tbl5,
+  booktabs = T,
+  caption="Table 5: Welfare effects of pension reforms and ageing at age 20. Ref=Benchmark (in %)") %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+```{r message=FALSE, warning=FALSE}
+sigmaG = as.numeric(Sigma) # This is the value of sigma_G
+tbl6<-dfT %>% subset(Age<1200 & !(Simu %in% c("Exp4","Exp5","Exp6","Exp7","Exp8"))) %>%
+  group_by(Simu,Ind) %>% 
+    mutate(
+      IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
+      IUtil.d=Survival*(Consumption^(1-1/sigmaG))/(1-1/sigmaG),
+      ) %>% 
+  group_by(Simu,Ind) %>% 
+    mutate(
+      #LE     =sum(Survival)/12,
+      EUtil  =(sum(IUtil)+IUtil-cumsum(IUtil))/Survival,
+      EUtil.d=(sum(IUtil.d)+IUtil.d-cumsum(IUtil.d))/Survival) %>% 
+  group_by(Ind) %>% 
+    mutate(Li=1-(1+(EUtil[Simu=="Benchmark"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
+    subset(Age2 %in% c(20,30,40,50,60)) %>%
+  group_by(Simu,Age2) %>% 
+    summarize(Lambda=round(100*mean(Li),2)) %>% spread(Simu, Lambda) 
+
+kableExtra:::kbl(
+  tbl6,
+  booktabs = T,
+  caption="Table 6: Welfare effects of pension reforms and ageing by exact age. Ref=Benchmark (mean values, in %)") %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+
+```{r message=FALSE, warning=FALSE}
+sigmaG=Table_Parameters[9,3] # This is the value of sigma_G
+tbl6b<-dfT %>% subset(Age<1200 & !(Simu %in% c("Benchmark","Exp1","Exp2","Exp3","Exp4"))) %>%
+  group_by(Simu,Productivity,Ind) %>% 
+    mutate(
+      IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
+      IUtil.d=Survival*(Consumption^(1-1/sigmaG))/(1-1/sigmaG),
+      ) %>% 
+  group_by(Simu,Productivity,Ind) %>% 
+    mutate(
+      #LE     =sum(Survival)/12,
+      EUtil  =(sum(IUtil)+IUtil-cumsum(IUtil))/Survival,
+      EUtil.d=(sum(IUtil.d)+IUtil.d-cumsum(IUtil.d))/Survival) %>% 
+  group_by(Productivity,Ind) %>% 
+    mutate(Li=1-(1+(EUtil[Simu=="Exp5"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
+    subset(Age2 %in% c(20,30,40,50,60)) %>%
+  group_by(Simu,Productivity,Age2) %>% 
+    summarize(Lambda=round(100*mean(Li),2)) %>% spread(Simu, Lambda) 
+
+kableExtra:::kbl(
+  tbl6b,
+  booktabs = T,
+  caption="Table 6b: Welfare effects of pension reforms and ageing by exact age. Ref=Benchmark (mean values, in %)") %>%
+  kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+
+
+```
+
+
+## Figure to respond reviewer
+
+```{r}
+# Define the function f(t)
+ft <- function(x) {
+  f0 = 0.2163
+  f1 = 3.142e-2
+  f2 = -2.916e-4
+  y <-  f0 + f1*x + f2*x^2
+  return(y)
+}
+# Define the function pi(t)
+pi_hat <- function(x) {
+  alpha_pi = -12.115
+  beta_pi  = 0.08185
+  
+  y <-  exp(-exp(alpha_pi+beta_pi*x))
+  return(y)
+}
+
+sigma_y = 0.0145
+F_H     = 5.09512
+tau     = 0.1976
+beta_y  = 1/(1-sigma_y)
+
+wght   = sigma_y*F_H*(1-tau)
+
+data <- dfT %>% 
+  filter(Simu=="Benchmark",Employment==1) %>% 
+  mutate(Age3  = case_when( Age2<35 ~ 0,
+                            Age2>=45 ~ 0,
+                            TRUE~1)) %>% 
+  group_by(Ind) %>% 
+  mutate(mJobt  = -12*log(1-MortalityJob/100000),
+         opt_f  = -12*log(1-(wght*Productivity*ft(Age2)/(pi_hat(40)*mean(VOL[Age3==1])))^beta_y),
+         opt_V  = -12*log(1-(wght*Productivity*mean(ft(Age2[Age3==1]))/(mean(pi_hat(Age2[Age3==1]))*VOL))^beta_y),
+         #opt_pi = -12*log(1-(wght*Productivity*mean(ft(Age2[Age3==1]))/(pi_hat(Age2)*mean(VOL[Age3==1])))^beta_y),
+         mJobt2 = mJobt/mean(mJobt[Age3==1]),
+         VOL2   = opt_V/mean(opt_V[Age3==1]),         
+         ft2    = opt_f/mean(opt_f[Age3==1])
+         #pit2   = opt_pi/mean(opt_pi[Age3==1])
+         ) %>% ungroup() 
+
+p <- data %>% 
+  ggplot() + 
+  geom_point(aes(x=Age2,y=mJobt2,group=Ind)) + 
+  geom_point(aes(x=Age2,y=VOL2,group=Ind),color="red",alpha=0.2) + 
+  geom_point(aes(x=Age2,y=ft2,group=Ind),color="blue",alpha=0.2) + 
+  #geom_point(aes(x=Age2,y=pit2,group=Ind),color="gray",alpha=0.2) + 
+  labs(x="Age",y="On-the-job mortality rate\n (ref. avg. m[t] btw ages 34-44 = 1.0)")+
+  theme_bw()+
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+p <- p + annotate("text", x = 40, y = 0.75, label = "Benchmark", vjust = -1) + 
+    annotate("text", x = 55, y = 0.82, label = "Productivity", vjust = -1, color="blue") + 
+    annotate("text", x = 25, y = 1.1, label = "Value of Life", vjust = -1, color="red")
+
+figN <- p + annotate("segment", x = 35, xend = 30, y = 0.80, yend = 0.80,
+           arrow = arrow(type = "closed", length = unit(0.2, "cm"))) + 
+    annotate("segment", x = 55, xend = 55, y = 0.90, yend = 1.035,
+           arrow = arrow(type = "closed", length = unit(0.2, "cm")),color="blue") +
+    annotate("segment", x = 25, xend = 25, y = 1.1, yend = 0.97,
+           arrow = arrow(type = "closed", length = unit(0.2, "cm")),color="red")
+
+figN
+ggsave("RR02/Figures/Decomposition_Components.png", figN, width = 12*0.6, height = 7*0.6, dpi=300)
+  
+```
+
+
+
+
+<!-- ## * Recalculation of sigma_y -->
+
+<!-- ```{r} -->
+<!-- dfT %>%   -->
+<!--   filter(Simu=="Benchmark",Age2 %in% seq(20,65),Employment==1) %>%  -->
+
+<!--   #ggplot(aes(x=factor(Age2),y=MortalityJob,group=factor(Productivity))) + geom_point() -->
+
+<!--   mutate( -->
+<!--     RHS=Survival*VOL/(Wages*(1-Tax)),  -->
+<!--     LHS01=(MortalityJob/100000)*RHS/(1-(MortalityJob/100000)/(0.013/110))) %>% -->
+<!--     #LHS10=(MortalityJob/100000)*RHS/(1-0.10*MortalityJob/max(MortalityJob)), -->
+<!--     #LHS50=(MortalityJob/100000)*RHS/(1-0.50*MortalityJob/max(MortalityJob))) %>%  -->
+<!--   #mutate(lambda=0.01825/(2*max(MortalityJob)/100000)) %>%  -->
+<!--   ggplot(aes(x=factor(Age2))) +  -->
+<!--   geom_boxplot(aes(y=LHS01)) #+  -->
+<!--   #geom_boxplot(aes(y=LHS10),color="red") +  -->
+<!--   #geom_boxplot(aes(y=LHS50),color="blue") +  -->
+<!--   #geom_boxplot(aes(y=(MortalityJob/100000)/(0.01825/2334))) -->
+<!-- ``` -->
+
+
+
+<!-- ## Partial equilibrium approach -->
+
+
+<!-- We load the necessary data -->
+<!-- ```{r} -->
+<!-- Simulations.P <- c("benchmark", -->
+<!--                    "hretage70", -->
+<!--                    "hretben50", -->
+<!--                    "sLEhigh", -->
+<!--                    "productivity", -->
+<!--                    "TwoGroups", -->
+<!--                    "TwoGroupsS2", -->
+<!--                    "TwoGroupsS5", -->
+<!--                    "TwoGroupsS6") -->
+<!-- Simu.P        <- c("Benchmark","Exp1","Exp2","Exp3","Exp4","Exp5","Exp6","Exp7","Exp8") -->
+
+<!-- path.P<-"~/Dropbox/Paper Martin and Alexia/Paper  Martin, Alexia, Miguel/Programming/Version 20221115/Results Stationary Population/Results 20230817/20221115_results_Sigma" -->
+
+<!-- dfT.P<- c() -->
+<!-- for (i in 1:length(Simulations.P)){ -->
+<!--   df.P      <-readRDS(file=paste0(path.P,Sigma[2],"_P_",Simulations.P[i],".rds")) -->
+<!--   df.P$Simu <-Simu.P[i] -->
+<!--   dfT.P<-rbind(dfT.P,df.P) -->
+<!-- } -->
+<!-- dfT.P<-dfT.P %>% mutate(Age2=20+(Age-1)/12) -->
+
+<!-- ``` -->
+
+
+<!-- ### - Age Profiles (Benchmark) -->
+
+<!-- Figure 3. Age profiles of annual labor income (A), wealth (B), and the -->
+<!-- conditional mortality on the job (C). Grey areas indicate 2.5% and 97.5% -->
+<!-- percentiles of the simulated distribution. Red points indicate the data. -->
+<!-- Case: Benchmark. Data source: CFOI, ACS, own simulations. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- inc.ages<-c(20:64) -->
+<!-- inc.wage<-c(2119.4656,2126.424,2126.1632,2168.8336,2188.72, -->
+<!--   2388.6816,2475.664,2502.7376,2566.12,2576.4912, -->
+<!--   2644.072,2684.856,2678.3408,2715.6768,2730.0496, -->
+<!--   2909.7344,2930.032,2968.6608,2919.544,2938.9792, -->
+<!--   2976.176,2988.7936,2998.1696,3027.1472,3004.6176, -->
+<!--   3030.36,3022.2048,3053.2832,3037.4208,3005.416, -->
+<!--   3049.088,3064.64,3053.9472,3044.2688,3081.9312, -->
+<!--   3096.9072,3122.6496,3086.7984,3091,3093.0512, -->
+<!--   3049.0592,3054.36,3050.1632,2998.7936,2997.0128) -->
+<!-- inc.data<-data.frame(inc.ages,inc.wage) -->
+
+<!-- x.a<-c(22,30,40,50,60) -->
+<!-- y.a<-c(22504,42702,55620,60126,58569) -->
+<!-- y.b<-c(2.23,2.61,2.87,3.49,4.46) -->
+<!-- d<-data.frame(x.a,y.a,y.b) -->
+
+<!-- fig3.PA<-dfT.P %>%  -->
+<!--   subset((Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=Wages))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=inc.data,aes(x=inc.ages,y=inc.wage),color="red",cex=2)+ -->
+<!--   labs(x="Age",y="Monthly wage rate (in $)",tag="A")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PB<-dfT.P %>% subset(Simu=="Benchmark") %>% ggplot(aes(x=Age2,y=Assets/1000))+geom_line(color="gray")+labs(x="Age",y="Wealth (in $1K)",tag="B")+theme_bw()+theme(panel.border = element_blank(), panel.grid.major = element_blank(), -->
+<!-- panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PC<-dfT.P %>%  -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJob))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=d,aes(x=x.a,y=y.b),color="red",cex=3)+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs(x="Age",y="Conditional mortality on-the-job (per 100k)",tag="C")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.P<-grid.arrange(fig3.PA, fig3.PB, fig3.PC,   -->
+<!--              ncol = 3, nrow = 1, heights=c(2), -->
+<!--              widths=c(2,2,2)) -->
+
+<!-- ggsave("Figures/Stationary_Age_Profiles_P.png", fig3.P, width = 12, height = 4) -->
+<!-- fig3.P -->
+<!-- ``` -->
+
+<!-- ### - Compensating wage differentials and the value of a statistical life (VSL) (Benchmark) -->
+
+<!-- Table 2: Value of a statistical life overall and by age -->
+
+<!-- \@ All ages \@ Age 40 \@ Age 50 \@ Age 60 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # All ages -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2 %in% c(seq(20,65)))) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary() -->
+
+
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 40 -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 50 -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 60 -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- ``` -->
+
+<!-- ### - The effect of wealth on mortality and wages (Benchmark) -->
+
+<!-- Figure 4: Simulated age profiles of the relationship between wealth and -->
+<!-- on-the-job mortality (Panel A) and the wage (Panel B) at each exact age. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig4.PA<-dfT.P %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="on-the-job mortality (per 100K)",tag="(A)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = c(0.2, 0.85), -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.PB<-dfT.P %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=Wages))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="wage (in $)",tag="(B)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.P<-grid.arrange(fig4.PA, fig4.PB,  -->
+<!--              ncol = 2, nrow = 1, heights=c(3), widths=c(3,3)) -->
+
+<!-- ggsave("Figures/Stationary_Wealth4Health_P.png", fig4.P, width = 8.5, height =3.5) -->
+
+<!-- fig4.P -->
+<!-- ``` -->
+
+<!-- Table 3: Marginal effect of wealth on on-the-job mortality and wages -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # log(MortalityJob)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+
+<!-- # log(Wages)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+
+<!-- ``` -->
+
+<!-- ### - Person-years worked -->
+
+<!-- Table 4: Decomposition of average person-years worked before age 65 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- dfT.P %>% subset(Age2<=65) %>% -->
+<!--   mutate(ei=ifelse(Employment==1,1,0), -->
+<!--               ui=ifelse(Employment==0,1,0), -->
+<!--               MortalityB=Mortality-MortalityJob, -->
+<!--               MortalityU=MortalityJob*ui, -->
+<!--               MortalityJ=MortalityJob*ei, -->
+<!--               eili=ei*Survival, -->
+<!--               dB=Survival*(MortalityB/100000), -->
+<!--               dU=Survival*(MortalityU/100000), -->
+<!--               dJ=Survival*(MortalityJ/100000)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   mutate(DB=cumsum(dB), -->
+<!--          DU=cumsum(dU), -->
+<!--          DJ=cumsum(dJ)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   summarize( -->
+<!--     PYWi=sum(eili)/12, -->
+<!--     Ei=sum(ei)/12, -->
+<!--     Bi=sum(ei*DB)/12, -->
+<!--     Ui=sum(ei*DU)/12, -->
+<!--     Ji=sum(ei*DJ)/12) %>%  -->
+<!--   group_by(Simu) %>% -->
+<!--   summarize( -->
+<!--     PYW=mean(PYWi), -->
+<!--     E=mean(Ei), -->
+<!--     B=-mean(Bi), -->
+<!--     U=-mean(Ui), -->
+<!--     J=-mean(Ji)) %>% t() -->
+<!-- ``` -->
+
+<!-- ### - The effect of labor and retirement policies -->
+
+<!-- Figure 5: Simulated age profiles of on-the-job mortality in four -->
+<!-- alternative simulations. Experiment I: higher retirement age; Experiment -->
+<!-- II: higher retirement benefits; Experiment III: higher life expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig5.P<-dfT.P %>%  -->
+<!--   subset(Employment==1) %>%  -->
+<!--   group_by(Simu,Age2) %>%  -->
+<!--   summarize(MortalityJ=mean(MortalityJob)) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJ,color=Simu))+ -->
+<!--   geom_line()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stationary_MortalityProfile_P.png", fig5.P, width = 6.5, height =4.5) -->
+<!-- fig5.P -->
+<!-- ``` -->
+
+<!-- Figure 5b: Simulated age profiles of on-the-job mortality in four -->
+<!-- alternative simulations. Experiment VI: higher retirement age; Experiment -->
+<!-- VII: higher retirement benefits; Experiment VIII: higher life expectancy. -->
+
+<!-- ```{r echo=FALSE, message=FALSE, warning=FALSE} -->
+
+
+<!-- dfTnew.P<-dfT.P %>%  -->
+<!--   subset(Employment==1 &  -->
+<!--            (Simu %in% c("Exp5","Exp6","Exp7","Exp8"))) -->
+
+<!-- fig5ba.P<-dfTnew.P %>%  -->
+<!--   subset(Productivity==unique(dfTnew.P$Productivity)[1]) %>%  -->
+<!-- #  mutate(Simulation=Simu) %>%  -->
+<!--   group_by(Simu,Age2) %>% -->
+<!--   summarize(MortalityJ=mean(MortalityJob)) %>% -->
+<!--   ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+ -->
+<!--   geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Exp5","Exp6","Exp7","Exp8"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   scale_linetype_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Exp5","Exp6","Exp7","Exp8"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--     xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="On-the-job mortality rate (per 100K)", -->
+<!--     title="Low-skilled")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = c(0.85, 0.30), -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig5bb.P<-dfTnew.P %>%  -->
+<!--   subset(Productivity==unique(dfTnew.P$Productivity)[2]) %>%  -->
+<!-- #  mutate(Simulation=Simu) %>%  -->
+<!--   group_by(Simu,Age2) %>% -->
+<!--   summarize(MortalityJ=mean(MortalityJob)) %>% -->
+<!--   ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+ -->
+<!--   geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Exp5","Exp6","Exp7","Exp8"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   scale_linetype_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Exp5","Exp6","Exp7","Exp8"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--     xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="On-the-job mortality rate (per 100K)", -->
+<!--     title="High-skilled")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig5bc.P<-dfTnew.P %>%  -->
+<!--   group_by(Simu,Productivity,Age2) %>% -->
+<!--   mutate(MortalityJ=mean(MortalityJob), -->
+<!--          Mort=-100000*12*log(1-MortalityJ/100000)) %>% -->
+<!--   group_by(Simu,Age2) %>%   -->
+<!--   summarize(Mort2=Mort[Productivity==unique(dfTnew.P$Productivity)[1]]-Mort[Productivity==unique(dfTnew.P$Productivity)[2]]) %>% -->
+<!--   ggplot(aes(x=Age2,y=Mort2))+ -->
+<!--   geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Exp5","Exp6","Exp7","Exp8"), -->
+<!--     labels=c("Exp. V","Exp. VI","Exp. VII","Exp. VIII"))+ -->
+<!--   scale_linetype_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Exp5","Exp6","Exp7","Exp8"), -->
+<!--     labels=c("Exp. V","Exp. VI","Exp. VII","Exp. VIII"))+ -->
+<!--     xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="Rate (per 100K)", -->
+<!--     title="Difference btw low-skilled and high-skilled workers")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = "", #c(0.85, 0.30), -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig5b.P<-grid.arrange(fig5ba.P, fig5bb.P, fig5bc.P,  -->
+<!--              ncol = 1, nrow = 3, heights=c(3,3,3), widths=c(3)) -->
+
+<!-- ggsave("Figures/Stationary_MortalityProfile_GBySkill_Partial.png", fig5b.P, width = 6.5*0.8, height =3.75*3*0.8) -->
+<!-- fig5b.P -->
+<!-- ``` -->
+
+
+<!-- Figure 6: Relationship between wealth and on-the-job mortality at age 55 -->
+<!-- in four alternative simulations. Experiment I: higher retirement age; -->
+<!-- Experiment II: higher retirement benefits; Experiment III: higher life -->
+<!-- expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig6.P<-dfT.P %>%  -->
+<!--   subset(Employment==1 & (Age2==55)) %>%   -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob,color=Simu))+ -->
+<!--   geom_point()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3","Exp4"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III","Exp. IV"))+ -->
+<!--   labs( -->
+<!--     x="wealth (in $1K)", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stationary_Wealth4Death_P.png", fig6.P, width = 6.5, height =4.5) -->
+<!-- fig6.P -->
+<!-- ``` -->
+
+<!-- ### - Table A.2 -->
+
+<!-- Table A2: Descriptive statistics of four alternative simulations -->
+<!-- (Period: Month) -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- # Our simulations are based on a stationary population with 500 new individuals born each month. For simplicity, we standardized the values in the Table to 1000 individuals annually. -->
+<!-- AdjFactor<-(1000/(12*500)) -->
+<!-- popgrowth<-1.00^(1/12) -->
+
+<!-- dfT.P %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age)) %>% -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     N=sum(Survival*popC)*AdjFactor, -->
+<!--     L=sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor, -->
+<!--     U=sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor, -->
+<!--     R=sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor, -->
+<!--     U_rate=100*U/(L+U)) %>% t() -->
+
+<!-- dfT.P %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age), -->
+<!--          weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Age2<65.0)) %>%  -->
+<!--   mutate(F.L=Wages/Output) %>%  -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     mT.mean=weighted.mean(Mortality,w=weight), -->
+<!--     mT.sd=radiant.data::weighted.sd(x = Mortality, wt = weight), -->
+<!--     m.mean=weighted.mean(MortalityJob,w=weight), -->
+<!--     m.sd=radiant.data::weighted.sd(x = MortalityJob, wt = weight), -->
+<!--     w.mean=weighted.mean(Wages,w=weight), -->
+<!--     w.sd=radiant.data::weighted.sd(x = Wages, wt = weight), -->
+<!--     y.mean=weighted.mean(Wages/0.66,w=weight), -->
+<!--     y.sd=radiant.data::weighted.sd(x = Wages/0.66, wt = weight), -->
+<!--     c.mean=weighted.mean(Consumption,w=weight), -->
+<!--     c.sd=radiant.data::weighted.sd(x = Consumption, wt = weight), -->
+<!--     a.mean=weighted.mean(Assets,w=weight), -->
+<!--     a.sd=radiant.data::weighted.sd(x = Assets, wt = weight), -->
+<!--     vol.mean=weighted.mean(VOL,w=weight), -->
+<!--     vol.sd=radiant.data::weighted.sd(x = VOL, wt = weight), -->
+<!--     t.mean=weighted.mean(Tax,w=weight), -->
+<!--     r.mean=0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)) %>% t() -->
+<!-- ``` -->
+
+<!-- ## Partial equilibrium approach with fixed tax rate -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- path<-"~/Dropbox/Paper Martin and Alexia/Paper  Martin, Alexia, Miguel/Programming/Version 20221115/Results Stationary Population/" -->
+<!-- df1.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[2],"_PP_benchmark.rds")) -->
+<!-- df2.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[2],"_PP_hretage70.rds")) -->
+<!-- df3.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[2],"_PP_hretben50.rds")) -->
+<!-- df4.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[2],"_PP_sLEhigh.rds")) -->
+<!-- df5.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[2],"_PP_productivity.rds")) -->
+
+<!-- df1.PP$Simu<-c("Benchmark") -->
+<!-- df2.PP$Simu<-c("Exp1") -->
+<!-- df3.PP$Simu<-c("Exp2") -->
+<!-- df4.PP$Simu<-c("Exp3") -->
+<!-- df5.PP$Simu<-c("Exp4") -->
+
+<!-- dfT.PP<-rbind(df1.PP,df2.PP) -->
+<!-- dfT.PP<-rbind(dfT.PP,df3.PP) -->
+<!-- dfT.PP<-rbind(dfT.PP,df4.PP) -->
+<!-- dfT.PP<-rbind(dfT.PP,df5.PP) -->
+<!-- dfT.PP<-dfT.PP %>% mutate(Age2=20+(Age-1)/12) -->
+<!-- ``` -->
+
+<!-- ### - Age Profiles (Benchmark) -->
+
+<!-- Figure 3. Age profiles of annual labor income (A), wealth (B), and the -->
+<!-- conditional mortality on the job (C). Grey areas indicate 2.5% and 97.5% -->
+<!-- percentiles of the simulated distribution. Red points indicate the data. -->
+<!-- Case: Benchmark. Data source: CFOI, ACS, own simulations. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- inc.ages<-c(20:64) -->
+<!-- inc.wage<-c(2119.4656,2126.424,2126.1632,2168.8336,2188.72, -->
+<!--   2388.6816,2475.664,2502.7376,2566.12,2576.4912, -->
+<!--   2644.072,2684.856,2678.3408,2715.6768,2730.0496, -->
+<!--   2909.7344,2930.032,2968.6608,2919.544,2938.9792, -->
+<!--   2976.176,2988.7936,2998.1696,3027.1472,3004.6176, -->
+<!--   3030.36,3022.2048,3053.2832,3037.4208,3005.416, -->
+<!--   3049.088,3064.64,3053.9472,3044.2688,3081.9312, -->
+<!--   3096.9072,3122.6496,3086.7984,3091,3093.0512, -->
+<!--   3049.0592,3054.36,3050.1632,2998.7936,2997.0128) -->
+<!-- inc.data<-data.frame(inc.ages,inc.wage) -->
+
+<!-- x.a<-c(22,30,40,50,60) -->
+<!-- y.a<-c(22504,42702,55620,60126,58569) -->
+<!-- y.b<-c(2.23,2.61,2.87,3.49,4.46) -->
+<!-- d<-data.frame(x.a,y.a,y.b) -->
+
+<!-- fig3.PPA<-dfT.PP %>%  -->
+<!--   subset((Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=Wages))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=inc.data,aes(x=inc.ages,y=inc.wage),color="red",cex=2)+ -->
+<!--   labs(x="Age",y="Monthly wage rate (in $)",tag="A")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PPB<-dfT.PP %>% subset(Simu=="Benchmark") %>% ggplot(aes(x=Age2,y=Assets/1000))+geom_line(color="gray")+labs(x="Age",y="Wealth (in $1K)",tag="B")+theme_bw()+theme(panel.border = element_blank(), panel.grid.major = element_blank(), -->
+<!-- panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PPC<-dfT.PP %>%  -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJob))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=d,aes(x=x.a,y=y.b),color="red",cex=3)+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs(x="Age",y="Conditional mortality on-the-job (per 100k)",tag="C")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PP<-grid.arrange(fig3.PPA, fig3.PPB, fig3.PPC,   -->
+<!--              ncol = 3, nrow = 1, heights=c(2), -->
+<!--              widths=c(2,2,2)) -->
+
+<!-- ggsave("Figures/Stationary_Age_Profiles_PP.png", fig3.PP, width = 12, height = 4) -->
+<!-- fig3.P -->
+<!-- ``` -->
+
+<!-- ### - Compensating wage differentials and the value of a statistical life (VSL) (Benchmark) -->
+
+<!-- Table 2: Value of a statistical life overall and by age -->
+
+<!-- \@ All ages \@ Age 40 \@ Age 50 \@ Age 60 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # All ages -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2 %in% c(seq(20,65)))) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary() -->
+
+
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 40 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 50 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 60 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- ``` -->
+
+<!-- ### - The effect of wealth on mortality and wages (Benchmark) -->
+
+<!-- Figure 4: Simulated age profiles of the relationship between wealth and -->
+<!-- on-the-job mortality (Panel A) and the wage (Panel B) at each exact age. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig4.PPA<-dfT.PP %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="on-the-job mortality (per 100K)",tag="(A)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = c(0.2, 0.85), -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.PPB<-dfT.PP %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=Wages))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="wage (in $)",tag="(B)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.PP<-grid.arrange(fig4.PPA, fig4.PPB,  -->
+<!--              ncol = 2, nrow = 1, heights=c(3), widths=c(3,3)) -->
+
+<!-- ggsave("Figures/Stationary_Wealth4Health_P.png", fig4.P, width = 8.5, height =3.5) -->
+
+<!-- fig4.PP -->
+<!-- ``` -->
+
+<!-- Table 3: Marginal effect of wealth on on-the-job mortality and wages -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # log(MortalityJob)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+
+<!-- # log(Wages)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+
+<!-- ``` -->
+
+<!-- ### - Person-years worked -->
+
+<!-- Table 4: Decomposition of average person-years worked before age 65 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- dfT.PP %>% subset(Age2<=65) %>% -->
+<!--   mutate(ei=ifelse(Employment==1,1,0), -->
+<!--               ui=ifelse(Employment==0,1,0), -->
+<!--               MortalityB=Mortality-MortalityJob, -->
+<!--               MortalityU=MortalityJob*ui, -->
+<!--               MortalityJ=MortalityJob*ei, -->
+<!--               eili=ei*Survival, -->
+<!--               dB=Survival*(MortalityB/100000), -->
+<!--               dU=Survival*(MortalityU/100000), -->
+<!--               dJ=Survival*(MortalityJ/100000)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   mutate(DB=cumsum(dB), -->
+<!--          DU=cumsum(dU), -->
+<!--          DJ=cumsum(dJ)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   summarize( -->
+<!--     PYWi=sum(eili)/12, -->
+<!--     Ei=sum(ei)/12, -->
+<!--     Bi=sum(ei*DB)/12, -->
+<!--     Ui=sum(ei*DU)/12, -->
+<!--     Ji=sum(ei*DJ)/12) %>%  -->
+<!--   group_by(Simu) %>% -->
+<!--   summarize( -->
+<!--     PYW=mean(PYWi), -->
+<!--     E=mean(Ei), -->
+<!--     B=-mean(Bi), -->
+<!--     U=-mean(Ui), -->
+<!--     J=-mean(Ji)) %>% t() -->
+<!-- ``` -->
+
+<!-- ### - The effect of labor and retirement policies -->
+
+<!-- Figure 5: Simulated age profiles of on-the-job mortality in four -->
+<!-- alternative simulations. Experiment I: higher retirement age; Experiment -->
+<!-- II: higher retirement benefits; Experiment III: higher life expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig5.PP<-dfT.PP %>%  -->
+<!--   subset(Employment==1) %>%  -->
+<!--   group_by(Simu,Age2) %>%  -->
+<!--   summarize(MortalityJ=mean(MortalityJob)) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJ,color=Simu))+ -->
+<!--   geom_line()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3","Exp4"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III","Exp. IV"))+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stationary_MortalityProfile_PP.png", fig5.PP, width = 6.5, height =4.5) -->
+<!-- fig5.PP -->
+<!-- ``` -->
+
+<!-- Figure 6: Relationship between wealth and on-the-job mortality at age 55 -->
+<!-- in four alternative simulations. Experiment I: higher retirement age; -->
+<!-- Experiment II: higher retirement benefits; Experiment III: higher life -->
+<!-- expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig6.PP<-dfT.PP %>%  -->
+<!--   subset(Employment==1 & (Age2==55)) %>%   -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob,color=Simu))+ -->
+<!--   geom_point()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3","Exp4"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III","Exp. IV"))+ -->
+<!--   labs( -->
+<!--     x="wealth (in $1K)", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stationary_Wealth4Death_PP.png", fig6.PP, width = 6.5, height =4.5) -->
+<!-- fig6.PP -->
+<!-- ``` -->
+
+<!-- ### - Table A.2 -->
+
+<!-- Table A2: Descriptive statistics of four alternative simulations -->
+<!-- (Period: Month) -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- # Our simulations are based on a stationary population with 500 new individuals born each month. For simplicity, we standardized the values in the Table to 1000 individuals annually. -->
+<!-- AdjFactor<-(1000/(12*500)) -->
+<!-- popgrowth<-1.00^(1/12) -->
+
+<!-- dfT.PP %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age)) %>% -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     N=sum(Survival*popC)*AdjFactor, -->
+<!--     L=sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor, -->
+<!--     U=sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor, -->
+<!--     R=sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor, -->
+<!--     U_rate=100*U/(L+U)) %>% t() -->
+
+<!-- dfT.PP %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age), -->
+<!--          weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Age2<65.0)) %>%  -->
+<!--   mutate(F.L=Wages/Output) %>%  -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     mT.mean=weighted.mean(Mortality,w=weight), -->
+<!--     mT.sd=radiant.data::weighted.sd(x = Mortality, wt = weight), -->
+<!--     m.mean=weighted.mean(MortalityJob,w=weight), -->
+<!--     m.sd=radiant.data::weighted.sd(x = MortalityJob, wt = weight), -->
+<!--     w.mean=weighted.mean(Wages,w=weight), -->
+<!--     w.sd=radiant.data::weighted.sd(x = Wages, wt = weight), -->
+<!--     y.mean=weighted.mean(Wages/0.66,w=weight), -->
+<!--     y.sd=radiant.data::weighted.sd(x = Wages/0.66, wt = weight), -->
+<!--     c.mean=weighted.mean(Consumption,w=weight), -->
+<!--     c.sd=radiant.data::weighted.sd(x = Consumption, wt = weight), -->
+<!--     a.mean=weighted.mean(Assets,w=weight), -->
+<!--     a.sd=radiant.data::weighted.sd(x = Assets, wt = weight), -->
+<!--     vol.mean=weighted.mean(VOL,w=weight), -->
+<!--     vol.sd=radiant.data::weighted.sd(x = VOL, wt = weight), -->
+<!--     t.mean=weighted.mean(Tax,w=weight), -->
+<!--     r.mean=0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)) %>% t() -->
+<!-- ``` -->
+
+<!-- # Stable Population (growth rate 1%) -->
+
+<!-- This is the set of parameters for the benchmark simulation -->
+
+<!-- ```{r, echo=FALSE, warning=FALSE} -->
+<!-- library(flextable) #you can use another table library, if you want -->
+<!-- flextable(read.csv("Results Stable Population/20221115_Par_Sigma0.8855_benchmark.csv")) -->
+<!-- ``` -->
+
+<!-- ## General equilibrium -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- path<-"~/Dropbox/Paper Martin and Alexia/Paper  Martin, Alexia, Miguel/Programming/Version 20221115/Results Stable Population/" -->
+<!-- df1<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_benchmark.rds")) -->
+<!-- df2<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_hretage70.rds")) -->
+<!-- df3<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_hretben50.rds")) -->
+<!-- df4<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_sLEhigh.rds")) -->
+
+<!-- df1$Simu<-c("Benchmark") -->
+<!-- df2$Simu<-c("Exp1") -->
+<!-- df3$Simu<-c("Exp2") -->
+<!-- df4$Simu<-c("Exp3") -->
+
+<!-- dfT<-rbind(df1,df2) -->
+<!-- dfT<-rbind(dfT,df3) -->
+<!-- dfT<-rbind(dfT,df4) -->
+<!-- dfT<-dfT %>% mutate(Age2=20+(Age-1)/12) -->
+<!-- ``` -->
+
+<!-- ### - Age Profiles (Benchmark) -->
+
+<!-- Figure 3. Age profiles of annual labor income (A), wealth (B), and the -->
+<!-- conditional mortality on the job (C). Grey areas indicate 2.5% and 97.5% -->
+<!-- percentiles of the simulated distribution. Red points indicate the data. -->
+<!-- Case: Benchmark. Data source: CFOI, ACS, own simulations. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- inc.ages<-c(20:64) -->
+<!-- inc.wage<-c(2119.4656,2126.424,2126.1632,2168.8336,2188.72, -->
+<!--   2388.6816,2475.664,2502.7376,2566.12,2576.4912, -->
+<!--   2644.072,2684.856,2678.3408,2715.6768,2730.0496, -->
+<!--   2909.7344,2930.032,2968.6608,2919.544,2938.9792, -->
+<!--   2976.176,2988.7936,2998.1696,3027.1472,3004.6176, -->
+<!--   3030.36,3022.2048,3053.2832,3037.4208,3005.416, -->
+<!--   3049.088,3064.64,3053.9472,3044.2688,3081.9312, -->
+<!--   3096.9072,3122.6496,3086.7984,3091,3093.0512, -->
+<!--   3049.0592,3054.36,3050.1632,2998.7936,2997.0128) -->
+<!-- inc.data<-data.frame(inc.ages,inc.wage) -->
+
+<!-- x.a<-c(22,30,40,50,60) -->
+<!-- y.a<-c(22504,42702,55620,60126,58569) -->
+<!-- y.b<-c(2.23,2.61,2.87,3.49,4.46) -->
+<!-- d<-data.frame(x.a,y.a,y.b) -->
+
+<!-- fig3.A<-dfT %>%  -->
+<!--   subset((Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=Wages))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=inc.data,aes(x=inc.ages,y=inc.wage),color="red",cex=2)+ -->
+<!--   labs(x="Age",y="Monthly wage rate (in $)",tag="A")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.B<-dfT %>% subset(Simu=="Benchmark") %>% ggplot(aes(x=Age2,y=Assets/1000))+geom_line(color="gray")+labs(x="Age",y="Wealth (in $1K)",tag="B")+theme_bw()+theme(panel.border = element_blank(), panel.grid.major = element_blank(), -->
+<!-- panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.C<-dfT %>% subset((Employment==1) & (Simu=="Benchmark")) %>% ggplot(aes(x=Age2,y=MortalityJob))+ -->
+<!--   geom_line(color="gray")+geom_point(data=d,aes(x=x.a,y=y.b),color="red",cex=3)+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs(x="Age",y="Conditional mortality on-the-job (per 100k)",tag="C")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3<-grid.arrange(fig3.A, fig3.B, fig3.C,   -->
+<!--              ncol = 3, nrow = 1, heights=c(2), -->
+<!--              widths=c(2,2,2)) -->
+
+<!-- ggsave("Figures/Stable_Age_Profiles_G.png", fig3, width = 12, height = 4) -->
+
+<!-- ``` -->
+
+<!-- ### - Compensating wage differentials and the value of a statistical life (VSL) (Benchmark) -->
+
+<!-- Table 2: Value of a statistical life overall and by age -->
+
+<!-- \@ All ages \@ Age 40 \@ Age 50 \@ Age 60 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # All ages -->
+<!-- dfT %>% subset(Employment==1 & (Age2 %in% c(seq(20,65))) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary() -->
+
+
+<!-- dfT %>% subset(Employment==1 & (Age2 %in% c(seq(20,64))) & (Simu=="Benchmark")) %>% summarize(w=mean(Wages),VSL=mean(VOL)/1000000) -->
+
+<!-- # Age 40 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==40) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT %>% subset(Employment==1 & (Age2==40) & (Simu=="Benchmark")) %>% summarize(w=mean(Wages),VSL=mean(VOL)/1000000) -->
+
+<!-- # Age 50 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% summarize(w=mean(Wages),VSL=mean(VOL)/1000000) -->
+
+<!-- # Age 60 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% summarize(w=mean(Wages),VSL=mean(VOL)/1000000) -->
+
+<!-- ``` -->
+
+<!-- ### - The effect of wealth on mortality and wages (Benchmark) -->
+
+<!-- Figure 4: Simulated age profiles of the relationship between wealth and -->
+<!-- on-the-job mortality (Panel A) and the wage (Panel B) at each exact age. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig4.A<-dfT %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="on-the-job mortality (per 100K)",tag="(A)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = c(0.2, 0.85), -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.B<-dfT %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=Wages))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="wage (in $)",tag="(B)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4<-grid.arrange(fig4.A, fig4.B,  -->
+<!--              ncol = 2, nrow = 1, heights=c(3), widths=c(3,3)) -->
+
+<!-- ggsave("Figures/Stable_Wealth4Health_G.png", fig4, width = 8.5, height =3.5) -->
+
+<!-- fig4 -->
+<!-- ``` -->
+
+<!-- Table 3: Marginal effect of wealth on on-the-job mortality and wages -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # log(MortalityJob)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+
+<!-- # log(Wages)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+
+<!-- ``` -->
+
+<!-- ### - Person-years worked -->
+
+<!-- The person-years worked until age $R$ of an individual belonging to the -->
+<!-- i-th group is given by $$ -->
+<!-- \begin{align} -->
+<!-- \text{PYW}_i&=\int_0^R e_i(x)l_i(x)dx=E_i-\int_0^R  e_i(x)(1-l_i(x))dx\\ -->
+<!-- &=E_i-\int_0^R  e_i(x)\left(\int_0^x d_i(u)du\right)dx=E_i-\int_0^R  e_i(x)D_i(x)dx -->
+<!-- \end{align} -->
+<!-- $$ where $e_i(x)$ is an indicator function that takes the value of one -->
+<!-- when the individual is working and zero otherwise, $l_i(x)$ is the -->
+<!-- probability of surviving from age 0 to age $x$, $E_i$ is the total -->
+<!-- number of years worked until age $R$ conditional on being alive, -->
+<!-- $d_i(x)$ is the fraction of people dying at age $x$ that belong to the -->
+<!-- i-th group, and $D_i(x)$ is the total number of person-years lost until -->
+<!-- age $x$ that belong to the i-th group. The last expression is convenient -->
+<!-- because the fraction of people dying at each age $x$ is the sum of -->
+<!-- people dying at each age $x$ due to the different risks -->
+<!-- $d_i(x)=d_{iB}(x)+d_{iU}(x)+d_{iJ}(x)$, with -->
+<!-- $d_{ij}(x)=\mu_{ij}(x)l_{i}(x)$, where $\mu_{ij}(x)$ is the mortality -->
+<!-- hazard rate associated to risk $j$. As a result, we can also express the -->
+<!-- person-years worked as the sum of the different components $$ -->
+<!-- \begin{gather} -->
+<!-- \text{PYW}_{i}=E_i-(A_{iB}+A_{iU}+A_{iJ}), -->
+<!-- \end{gather} -->
+<!-- $$ where $A_{ij}=\int_0^R e_i(x) D_{ij}(x)dx$ for $j\in\{B,U,J\}$. -->
+
+<!-- Table 4: Decomposition of average person-years worked before age 65 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- popgrowth<-1.01^(1/12) -->
+
+<!-- dfT %>% subset(Age2<=65) %>% -->
+<!--   mutate(popC=popgrowth^(1-Age), -->
+<!--               ei=ifelse(Employment==1,1,0), -->
+<!--               ui=ifelse(Employment==0,1,0), -->
+<!--               MortalityB=Mortality-MortalityJob, -->
+<!--               MortalityU=MortalityJob*ui, -->
+<!--               MortalityJ=MortalityJob*ei, -->
+<!--               eili=ei*Survival, -->
+<!--               dB=Survival*(MortalityB/100000), -->
+<!--               dU=Survival*(MortalityU/100000), -->
+<!--               dJ=Survival*(MortalityJ/100000)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   mutate(DB=cumsum(dB), -->
+<!--          DU=cumsum(dU), -->
+<!--          DJ=cumsum(dJ)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   summarize( -->
+<!--     PYWi=sum(eili)/12, -->
+<!--     Ei=sum(ei)/12, -->
+<!--     Bi=sum(ei*DB)/12, -->
+<!--     Ui=sum(ei*DU)/12, -->
+<!--     Ji=sum(ei*DJ)/12) %>%  -->
+<!--   group_by(Simu) %>% -->
+<!--   summarize( -->
+<!--     PYW=mean(PYWi), -->
+<!--     E=mean(Ei), -->
+<!--     B=-mean(Bi), -->
+<!--     U=-mean(Ui), -->
+<!--     J=-mean(Ji)) %>% t() -->
+<!-- ``` -->
+
+<!-- ### - The effect of labor and retirement policies -->
+
+<!-- Figure 5: Simulated age profiles of on-the-job mortality in four -->
+<!-- alternative simulations. Experiment I: higher retirement age; Experiment -->
+<!-- II: higher retirement benefits; Experiment III: higher life expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig5<-dfT %>% subset(Employment==1) %>% group_by(Simu,Age2) %>% summarize(MortalityJ=mean(MortalityJob)) %>% ggplot(aes(x=Age2,y=MortalityJ,color=Simu))+geom_line()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stable_MortalityProfile_G.png", fig5, width = 6.5, height =4.5) -->
+<!-- fig5 -->
+<!-- ``` -->
+
+<!-- Figure 6: Relationship between wealth and on-the-job mortality at age 55 -->
+<!-- in four alternative simulations. Experiment I: higher retirement age; -->
+<!-- Experiment II: higher retirement benefits; Experiment III: higher life -->
+<!-- expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig6<-dfT %>% subset(Employment==1 & (Age2==55)) %>%  ggplot(aes(x=Assets/1000,y=MortalityJob,color=Simu))+geom_point()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   labs( -->
+<!--     x="wealth (in $1K)", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stable_Wealth4Death_G.png", fig6, width = 6.5, height =4.5) -->
+<!-- fig6 -->
+<!-- ``` -->
+
+<!-- ### - Table A.2 -->
+
+<!-- Table A2: Descriptive statistics of four alternative simulations -->
+<!-- (Period: Month) -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- # Our simulations are based on a stationary population with 500 new individuals born each month. For simplicity, we standardized the values in the Table to 1000 individuals annually. -->
+<!-- AdjFactor<-(1000/(12*500)) -->
+<!-- popgrowth<-1.01^(1/12) -->
+
+<!-- dfT %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age)) %>% -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     N=sum(Survival*popC)*AdjFactor, -->
+<!--     L=sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor, -->
+<!--     U=sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor, -->
+<!--     R=sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor, -->
+<!--     U_rate=100*U/(L+U)) %>% t() -->
+
+<!-- dfT %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age), -->
+<!--          weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Age2<65.0)) %>%  -->
+<!--   mutate(F.L=Wages/Output) %>%  -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     mT.mean=weighted.mean(Mortality,w=weight), -->
+<!--     mT.sd=radiant.data::weighted.sd(x = Mortality, wt = weight), -->
+<!--     m.mean=weighted.mean(MortalityJob,w=weight), -->
+<!--     m.sd=radiant.data::weighted.sd(x = MortalityJob, wt = weight), -->
+<!--     w.mean=weighted.mean(Wages,w=weight), -->
+<!--     w.sd=radiant.data::weighted.sd(x = Wages, wt = weight), -->
+<!--     y.mean=weighted.mean(Wages/0.66,w=weight), -->
+<!--     y.sd=radiant.data::weighted.sd(x = Wages/0.66, wt = weight), -->
+<!--     c.mean=weighted.mean(Consumption,w=weight), -->
+<!--     c.sd=radiant.data::weighted.sd(x = Consumption, wt = weight), -->
+<!--     a.mean=weighted.mean(Assets,w=weight), -->
+<!--     a.sd=radiant.data::weighted.sd(x = Assets, wt = weight), -->
+<!--     vol.mean=weighted.mean(VOL,w=weight), -->
+<!--     vol.sd=radiant.data::weighted.sd(x = VOL, wt = weight), -->
+<!--     t.mean=weighted.mean(Tax,w=weight), -->
+<!--     r.mean=0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)) %>% t() -->
+<!-- ``` -->
+
+<!-- $$ -->
+<!-- \begin{align} -->
+<!-- F  &=K^\alpha H^{1-\alpha},\\ -->
+<!-- F_H&=w/y,\\ -->
+<!-- r  &=\alpha\left(\frac{1-\alpha}{F_H}\right)^\frac{1-\alpha}{\alpha}-\delta. -->
+<!-- \end{align} -->
+<!-- $$ -->
+
+<!-- ## Partial equilibrium approach -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- path<-"~/Dropbox/Paper Martin and Alexia/Paper  Martin, Alexia, Miguel/Programming/Version 20221115/Results Stable Population/" -->
+<!-- df1.P<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_P_benchmark.rds")) -->
+<!-- df2.P<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_P_hretage70.rds")) -->
+<!-- df3.P<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_P_hretben50.rds")) -->
+<!-- df4.P<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_P_sLEhigh.rds")) -->
+
+<!-- df1.P$Simu<-c("Benchmark") -->
+<!-- df2.P$Simu<-c("Exp1") -->
+<!-- df3.P$Simu<-c("Exp2") -->
+<!-- df4.P$Simu<-c("Exp3") -->
+
+<!-- dfT.P<-rbind(df1.P,df2.P) -->
+<!-- dfT.P<-rbind(dfT.P,df3.P) -->
+<!-- dfT.P<-rbind(dfT.P,df4.P) -->
+<!-- dfT.P<-dfT.P %>% mutate(Age2=20+(Age-1)/12) -->
+<!-- ``` -->
+
+<!-- ### - Age Profiles (Benchmark) -->
+
+<!-- Figure 3. Age profiles of annual labor income (A), wealth (B), and the -->
+<!-- conditional mortality on the job (C). Grey areas indicate 2.5% and 97.5% -->
+<!-- percentiles of the simulated distribution. Red points indicate the data. -->
+<!-- Case: Benchmark. Data source: CFOI, ACS, own simulations. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- inc.ages<-c(20:64) -->
+<!-- inc.wage<-c(2119.4656,2126.424,2126.1632,2168.8336,2188.72, -->
+<!--   2388.6816,2475.664,2502.7376,2566.12,2576.4912, -->
+<!--   2644.072,2684.856,2678.3408,2715.6768,2730.0496, -->
+<!--   2909.7344,2930.032,2968.6608,2919.544,2938.9792, -->
+<!--   2976.176,2988.7936,2998.1696,3027.1472,3004.6176, -->
+<!--   3030.36,3022.2048,3053.2832,3037.4208,3005.416, -->
+<!--   3049.088,3064.64,3053.9472,3044.2688,3081.9312, -->
+<!--   3096.9072,3122.6496,3086.7984,3091,3093.0512, -->
+<!--   3049.0592,3054.36,3050.1632,2998.7936,2997.0128) -->
+<!-- inc.data<-data.frame(inc.ages,inc.wage) -->
+
+<!-- x.a<-c(22,30,40,50,60) -->
+<!-- y.a<-c(22504,42702,55620,60126,58569) -->
+<!-- y.b<-c(2.23,2.61,2.87,3.49,4.46) -->
+<!-- d<-data.frame(x.a,y.a,y.b) -->
+
+<!-- fig3.PA<-dfT.P %>%  -->
+<!--   subset((Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=Wages))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=inc.data,aes(x=inc.ages,y=inc.wage),color="red",cex=2)+ -->
+<!--   labs(x="Age",y="Monthly wage rate (in $)",tag="A")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PB<-dfT.P %>% subset(Simu=="Benchmark") %>% ggplot(aes(x=Age2,y=Assets/1000))+geom_line(color="gray")+labs(x="Age",y="Wealth (in $1K)",tag="B")+theme_bw()+theme(panel.border = element_blank(), panel.grid.major = element_blank(), -->
+<!-- panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PC<-dfT.P %>%  -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJob))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=d,aes(x=x.a,y=y.b),color="red",cex=3)+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs(x="Age",y="Conditional mortality on-the-job (per 100k)",tag="C")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.P<-grid.arrange(fig3.PA, fig3.PB, fig3.PC,   -->
+<!--              ncol = 3, nrow = 1, heights=c(2), -->
+<!--              widths=c(2,2,2)) -->
+
+<!-- ggsave("Figures/Stable_Age_Profiles_P.png", fig3.P, width = 12, height = 4) -->
+<!-- fig3.P -->
+<!-- ``` -->
+
+<!-- ### - Compensating wage differentials and the value of a statistical life (VSL) (Benchmark) -->
+
+<!-- Table 2: Value of a statistical life overall and by age -->
+
+<!-- \@ All ages \@ Age 40 \@ Age 50 \@ Age 60 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # All ages -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2 %in% c(seq(20,65)))) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary() -->
+
+
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 40 -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 50 -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 60 -->
+<!-- dfT.P %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.P %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- ``` -->
+
+<!-- ### - The effect of wealth on mortality and wages (Benchmark) -->
+
+<!-- Figure 4: Simulated age profiles of the relationship between wealth and -->
+<!-- on-the-job mortality (Panel A) and the wage (Panel B) at each exact age. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig4.PA<-dfT.P %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="on-the-job mortality (per 100K)",tag="(A)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = c(0.2, 0.85), -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.PB<-dfT.P %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=Wages))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="wage (in $)",tag="(B)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.P<-grid.arrange(fig4.PA, fig4.PB,  -->
+<!--              ncol = 2, nrow = 1, heights=c(3), widths=c(3,3)) -->
+
+<!-- ggsave("Figures/Stable_Wealth4Health_P.png", fig4.P, width = 8.5, height =3.5) -->
+
+<!-- fig4.P -->
+<!-- ``` -->
+
+<!-- Table 3: Marginal effect of wealth on on-the-job mortality and wages -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # log(MortalityJob)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+
+<!-- # log(Wages)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.P %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+
+<!-- ``` -->
+
+<!-- ### - Person-years worked -->
+
+<!-- Table 4: Decomposition of average person-years worked before age 65 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- dfT.P %>% subset(Age2<=65) %>% -->
+<!--   mutate(ei=ifelse(Employment==1,1,0), -->
+<!--               ui=ifelse(Employment==0,1,0), -->
+<!--               MortalityB=Mortality-MortalityJob, -->
+<!--               MortalityU=MortalityJob*ui, -->
+<!--               MortalityJ=MortalityJob*ei, -->
+<!--               eili=ei*Survival, -->
+<!--               dB=Survival*(MortalityB/100000), -->
+<!--               dU=Survival*(MortalityU/100000), -->
+<!--               dJ=Survival*(MortalityJ/100000)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   mutate(DB=cumsum(dB), -->
+<!--          DU=cumsum(dU), -->
+<!--          DJ=cumsum(dJ)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   summarize( -->
+<!--     PYWi=sum(eili)/12, -->
+<!--     Ei=sum(ei)/12, -->
+<!--     Bi=sum(ei*DB)/12, -->
+<!--     Ui=sum(ei*DU)/12, -->
+<!--     Ji=sum(ei*DJ)/12) %>%  -->
+<!--   group_by(Simu) %>% -->
+<!--   summarize( -->
+<!--     PYW=mean(PYWi), -->
+<!--     E=mean(Ei), -->
+<!--     B=-mean(Bi), -->
+<!--     U=-mean(Ui), -->
+<!--     J=-mean(Ji)) %>% t() -->
+<!-- ``` -->
+
+<!-- ### - The effect of labor and retirement policies -->
+
+<!-- Figure 5: Simulated age profiles of on-the-job mortality in four -->
+<!-- alternative simulations. Experiment I: higher retirement age; Experiment -->
+<!-- II: higher retirement benefits; Experiment III: higher life expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig5.P<-dfT.P %>%  -->
+<!--   subset(Employment==1) %>%  -->
+<!--   group_by(Simu,Age2) %>%  -->
+<!--   summarize(MortalityJ=mean(MortalityJob)) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJ,color=Simu))+ -->
+<!--   geom_line()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stable_MortalityProfile_P.png", fig5.P, width = 6.5, height =4.5) -->
+<!-- fig5.P -->
+<!-- ``` -->
+
+<!-- Figure 6: Relationship between wealth and on-the-job mortality at age 55 -->
+<!-- in four alternative simulations. Experiment I: higher retirement age; -->
+<!-- Experiment II: higher retirement benefits; Experiment III: higher life -->
+<!-- expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig6.P<-dfT.P %>%  -->
+<!--   subset(Employment==1 & (Age2==55)) %>%   -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob,color=Simu))+ -->
+<!--   geom_point()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   labs( -->
+<!--     x="wealth (in $1K)", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stable_Wealth4Death_P.png", fig6.P, width = 6.5, height =4.5) -->
+<!-- fig6.P -->
+<!-- ``` -->
+
+<!-- ### - Table A.2 -->
+
+<!-- Table A2: Descriptive statistics of four alternative simulations -->
+<!-- (Period: Month) -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- # Our simulations are based on a stationary population with 500 new individuals born each month. For simplicity, we standardized the values in the Table to 1000 individuals annually. -->
+<!-- AdjFactor<-(1000/(12*500)) -->
+<!-- popgrowth<-1.01^(1/12) -->
+
+<!-- dfT.P %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age)) %>% -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     N=sum(Survival*popC)*AdjFactor, -->
+<!--     L=sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor, -->
+<!--     U=sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor, -->
+<!--     R=sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor, -->
+<!--     U_rate=100*U/(L+U)) %>% t() -->
+
+<!-- dfT.P %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age), -->
+<!--          weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Age2<65.0)) %>%  -->
+<!--   mutate(F.L=Wages/Output) %>%  -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     mT.mean=weighted.mean(Mortality,w=weight), -->
+<!--     mT.sd=radiant.data::weighted.sd(x = Mortality, wt = weight), -->
+<!--     m.mean=weighted.mean(MortalityJob,w=weight), -->
+<!--     m.sd=radiant.data::weighted.sd(x = MortalityJob, wt = weight), -->
+<!--     w.mean=weighted.mean(Wages,w=weight), -->
+<!--     w.sd=radiant.data::weighted.sd(x = Wages, wt = weight), -->
+<!--     y.mean=weighted.mean(Wages/0.66,w=weight), -->
+<!--     y.sd=radiant.data::weighted.sd(x = Wages/0.66, wt = weight), -->
+<!--     c.mean=weighted.mean(Consumption,w=weight), -->
+<!--     c.sd=radiant.data::weighted.sd(x = Consumption, wt = weight), -->
+<!--     a.mean=weighted.mean(Assets,w=weight), -->
+<!--     a.sd=radiant.data::weighted.sd(x = Assets, wt = weight), -->
+<!--     vol.mean=weighted.mean(VOL,w=weight), -->
+<!--     vol.sd=radiant.data::weighted.sd(x = VOL, wt = weight), -->
+<!--     t.mean=weighted.mean(Tax,w=weight), -->
+<!--     r.mean=0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)) %>% t() -->
+<!-- ``` -->
+
+<!-- ## Partial equilibrium approach with fixed tax rate -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- path<-"~/Dropbox/Paper Martin and Alexia/Paper  Martin, Alexia, Miguel/Programming/Version 20221115/Results Stable Population/" -->
+<!-- df1.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_PP_benchmark.rds")) -->
+<!-- df2.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_PP_hretage70.rds")) -->
+<!-- df3.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_PP_hretben50.rds")) -->
+<!-- df4.PP<-readRDS(file=paste0(path,"20221115_results_Sigma",Sigma[1],"_PP_sLEhigh.rds")) -->
+
+<!-- df1.PP$Simu<-c("Benchmark") -->
+<!-- df2.PP$Simu<-c("Exp1") -->
+<!-- df3.PP$Simu<-c("Exp2") -->
+<!-- df4.PP$Simu<-c("Exp3") -->
+
+<!-- dfT.PP<-rbind(df1.PP,df2.PP) -->
+<!-- dfT.PP<-rbind(dfT.PP,df3.PP) -->
+<!-- dfT.PP<-rbind(dfT.PP,df4.PP) -->
+<!-- dfT.PP<-dfT.PP %>% mutate(Age2=20+(Age-1)/12) -->
+<!-- ``` -->
+
+<!-- ### - Age Profiles (Benchmark) -->
+
+<!-- Figure 3. Age profiles of annual labor income (A), wealth (B), and the -->
+<!-- conditional mortality on the job (C). Grey areas indicate 2.5% and 97.5% -->
+<!-- percentiles of the simulated distribution. Red points indicate the data. -->
+<!-- Case: Benchmark. Data source: CFOI, ACS, own simulations. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- inc.ages<-c(20:64) -->
+<!-- inc.wage<-c(2119.4656,2126.424,2126.1632,2168.8336,2188.72, -->
+<!--   2388.6816,2475.664,2502.7376,2566.12,2576.4912, -->
+<!--   2644.072,2684.856,2678.3408,2715.6768,2730.0496, -->
+<!--   2909.7344,2930.032,2968.6608,2919.544,2938.9792, -->
+<!--   2976.176,2988.7936,2998.1696,3027.1472,3004.6176, -->
+<!--   3030.36,3022.2048,3053.2832,3037.4208,3005.416, -->
+<!--   3049.088,3064.64,3053.9472,3044.2688,3081.9312, -->
+<!--   3096.9072,3122.6496,3086.7984,3091,3093.0512, -->
+<!--   3049.0592,3054.36,3050.1632,2998.7936,2997.0128) -->
+<!-- inc.data<-data.frame(inc.ages,inc.wage) -->
+
+<!-- x.a<-c(22,30,40,50,60) -->
+<!-- y.a<-c(22504,42702,55620,60126,58569) -->
+<!-- y.b<-c(2.23,2.61,2.87,3.49,4.46) -->
+<!-- d<-data.frame(x.a,y.a,y.b) -->
+
+<!-- fig3.PPA<-dfT.PP %>%  -->
+<!--   subset((Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=Wages))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=inc.data,aes(x=inc.ages,y=inc.wage),color="red",cex=2)+ -->
+<!--   labs(x="Age",y="Monthly wage rate (in $)",tag="A")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PPB<-dfT.PP %>% subset(Simu=="Benchmark") %>% ggplot(aes(x=Age2,y=Assets/1000))+geom_line(color="gray")+labs(x="Age",y="Wealth (in $1K)",tag="B")+theme_bw()+theme(panel.border = element_blank(), panel.grid.major = element_blank(), -->
+<!-- panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PPC<-dfT.PP %>%  -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJob))+ -->
+<!--   geom_line(color="gray")+ -->
+<!--   geom_point(data=d,aes(x=x.a,y=y.b),color="red",cex=3)+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs(x="Age",y="Conditional mortality on-the-job (per 100k)",tag="C")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig3.PP<-grid.arrange(fig3.PPA, fig3.PPB, fig3.PPC,   -->
+<!--              ncol = 3, nrow = 1, heights=c(2), -->
+<!--              widths=c(2,2,2)) -->
+
+<!-- ggsave("Figures/Stable_Age_Profiles_PP.png", fig3.PP, width = 12, height = 4) -->
+<!-- fig3.P -->
+<!-- ``` -->
+
+<!-- ### - Compensating wage differentials and the value of a statistical life (VSL) (Benchmark) -->
+
+<!-- Table 2: Value of a statistical life overall and by age -->
+
+<!-- \@ All ages \@ Age 40 \@ Age 50 \@ Age 60 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # All ages -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2 %in% c(seq(20,65)))) %>% lm(formula=log(Wages)~MortalityJob+factor(Age2)-1) %>% summary() -->
+
+
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark")) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 40 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==40)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 50 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==50)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- # Age 60 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% lm(formula=log(Wages)~MortalityJob) %>% summary() -->
+<!-- dfT.PP %>%  -->
+<!--   mutate( -->
+<!--     popC=popgrowth^(1-Age), -->
+<!--     weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Simu=="Benchmark") & (Age2==60)) %>% -->
+<!--   summarize( -->
+<!--     w=weighted.mean(Wages,w=weight), -->
+<!--     VSL=weighted.mean(VOL,w=weight)/1000000) -->
+
+<!-- ``` -->
+
+<!-- ### - The effect of wealth on mortality and wages (Benchmark) -->
+
+<!-- Figure 4: Simulated age profiles of the relationship between wealth and -->
+<!-- on-the-job mortality (Panel A) and the wage (Panel B) at each exact age. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig4.PPA<-dfT.PP %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="on-the-job mortality (per 100K)",tag="(A)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = c(0.2, 0.85), -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.PPB<-dfT.PP %>%  -->
+<!--   subset((Age2 %in% c(50,55,60)) & (Employment==1) & (Simu=="Benchmark")) %>%  -->
+<!--   ggplot(aes(x=Assets/1000,y=Wages))+ -->
+<!--   geom_point(aes(color=as.factor(Age2)))+ -->
+<!--   scale_colour_brewer("Exact age")+ -->
+<!--   labs(x="wealth (in $1K)",y="wage (in $)",tag="(B)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- fig4.PP<-grid.arrange(fig4.PPA, fig4.PPB,  -->
+<!--              ncol = 2, nrow = 1, heights=c(3), widths=c(3,3)) -->
+
+<!-- ggsave("Figures/Stable_Wealth4Health_P.png", fig4.P, width = 8.5, height =3.5) -->
+
+<!-- fig4.PP -->
+<!-- ``` -->
+
+<!-- Table 3: Marginal effect of wealth on on-the-job mortality and wages -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- # log(MortalityJob)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(MortalityJob)~log(Assets)) %>% summary() -->
+
+<!-- # log(Wages)~log(Assets) -->
+<!-- # Age 50 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==50) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 55 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==55) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+<!-- # Age 60 -->
+<!-- dfT.PP %>% subset(Employment==1 & (Age2==60) & (Simu=="Benchmark")) %>% lm(formula=log(Wages)~log(Assets)) %>% summary() -->
+
+<!-- ``` -->
+
+<!-- ### - Person-years worked -->
+
+<!-- Table 4: Decomposition of average person-years worked before age 65 -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- dfT.PP %>% subset(Age2<=65) %>% -->
+<!--   mutate(ei=ifelse(Employment==1,1,0), -->
+<!--               ui=ifelse(Employment==0,1,0), -->
+<!--               MortalityB=Mortality-MortalityJob, -->
+<!--               MortalityU=MortalityJob*ui, -->
+<!--               MortalityJ=MortalityJob*ei, -->
+<!--               eili=ei*Survival, -->
+<!--               dB=Survival*(MortalityB/100000), -->
+<!--               dU=Survival*(MortalityU/100000), -->
+<!--               dJ=Survival*(MortalityJ/100000)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   mutate(DB=cumsum(dB), -->
+<!--          DU=cumsum(dU), -->
+<!--          DJ=cumsum(dJ)) %>%  -->
+<!--   group_by(Simu,Ind) %>%  -->
+<!--   summarize( -->
+<!--     PYWi=sum(eili)/12, -->
+<!--     Ei=sum(ei)/12, -->
+<!--     Bi=sum(ei*DB)/12, -->
+<!--     Ui=sum(ei*DU)/12, -->
+<!--     Ji=sum(ei*DJ)/12) %>%  -->
+<!--   group_by(Simu) %>% -->
+<!--   summarize( -->
+<!--     PYW=mean(PYWi), -->
+<!--     E=mean(Ei), -->
+<!--     B=-mean(Bi), -->
+<!--     U=-mean(Ui), -->
+<!--     J=-mean(Ji)) %>% t() -->
+<!-- ``` -->
+
+<!-- ### - The effect of labor and retirement policies -->
+
+<!-- Figure 5: Simulated age profiles of on-the-job mortality in four -->
+<!-- alternative simulations. Experiment I: higher retirement age; Experiment -->
+<!-- II: higher retirement benefits; Experiment III: higher life expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig5.PP<-dfT.PP %>%  -->
+<!--   subset(Employment==1) %>%  -->
+<!--   group_by(Simu,Age2) %>%  -->
+<!--   summarize(MortalityJ=mean(MortalityJob)) %>%  -->
+<!--   ggplot(aes(x=Age2,y=MortalityJ,color=Simu))+ -->
+<!--   geom_line()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   xlim(20,64)+ -->
+<!--   labs( -->
+<!--     x="Age", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stable_MortalityProfile_PP.png", fig5.PP, width = 6.5, height =4.5) -->
+<!-- fig5.PP -->
+<!-- ``` -->
+
+<!-- Figure 6: Relationship between wealth and on-the-job mortality at age 55 -->
+<!-- in four alternative simulations. Experiment I: higher retirement age; -->
+<!-- Experiment II: higher retirement benefits; Experiment III: higher life -->
+<!-- expectancy. -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+<!-- fig6.PP<-dfT.PP %>%  -->
+<!--   subset(Employment==1 & (Age2==55)) %>%   -->
+<!--   ggplot(aes(x=Assets/1000,y=MortalityJob,color=Simu))+ -->
+<!--   geom_point()+ -->
+<!--   scale_color_discrete( -->
+<!--     name="Simulation", -->
+<!--     breaks=c("Benchmark","Exp1","Exp2","Exp3"), -->
+<!--     labels=c("Benchmark","Exp. I","Exp. II","Exp. III"))+ -->
+<!--   labs( -->
+<!--     x="wealth (in $1K)", -->
+<!--     y="On-the-job mortality rate (per 100K)")+ -->
+<!--   theme_bw()+ -->
+<!--   theme(legend.position= "right", -->
+<!--         panel.border = element_blank(),  -->
+<!--         panel.grid.major = element_blank(),  -->
+<!--         panel.grid.minor = element_blank(),  -->
+<!--         axis.line = element_line(colour = "black")) -->
+
+<!-- ggsave("Figures/Stable_Wealth4Death_PP.png", fig6.PP, width = 6.5, height =4.5) -->
+<!-- fig6.PP -->
+<!-- ``` -->
+
+<!-- ### - Table A.2 -->
+
+<!-- Table A2: Descriptive statistics of four alternative simulations -->
+<!-- (Period: Month) -->
+
+<!-- ```{r eval=FALSE, include=FALSE} -->
+
+<!-- # Our simulations are based on a stationary population with 500 new individuals born each month. For simplicity, we standardized the values in the Table to 1000 individuals annually. -->
+<!-- AdjFactor<-(1000/(12*500)) -->
+<!-- popgrowth<-1.01^(1/12) -->
+
+<!-- dfT.PP %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age)) %>% -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     N=sum(Survival*popC)*AdjFactor, -->
+<!--     L=sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor, -->
+<!--     U=sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor, -->
+<!--     R=sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor, -->
+<!--     U_rate=100*U/(L+U)) %>% t() -->
+
+<!-- dfT.PP %>%  -->
+<!--   mutate(popC=popgrowth^(1-Age), -->
+<!--          weight=Survival*popC/sum(Survival*popC)) %>% -->
+<!--   subset(Employment==1 & (Age2<65.0)) %>%  -->
+<!--   mutate(F.L=Wages/Output) %>%  -->
+<!--   group_by(Simu) %>%  -->
+<!--   summarize( -->
+<!--     mT.mean=weighted.mean(Mortality,w=weight), -->
+<!--     mT.sd=radiant.data::weighted.sd(x = Mortality, wt = weight), -->
+<!--     m.mean=weighted.mean(MortalityJob,w=weight), -->
+<!--     m.sd=radiant.data::weighted.sd(x = MortalityJob, wt = weight), -->
+<!--     w.mean=weighted.mean(Wages,w=weight), -->
+<!--     w.sd=radiant.data::weighted.sd(x = Wages, wt = weight), -->
+<!--     y.mean=weighted.mean(Wages/0.66,w=weight), -->
+<!--     y.sd=radiant.data::weighted.sd(x = Wages/0.66, wt = weight), -->
+<!--     c.mean=weighted.mean(Consumption,w=weight), -->
+<!--     c.sd=radiant.data::weighted.sd(x = Consumption, wt = weight), -->
+<!--     a.mean=weighted.mean(Assets,w=weight), -->
+<!--     a.sd=radiant.data::weighted.sd(x = Assets, wt = weight), -->
+<!--     vol.mean=weighted.mean(VOL,w=weight), -->
+<!--     vol.sd=radiant.data::weighted.sd(x = VOL, wt = weight), -->
+<!--     t.mean=weighted.mean(Tax,w=weight), -->
+<!--     r.mean=0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)) %>% t() -->
+<!-- ``` -->

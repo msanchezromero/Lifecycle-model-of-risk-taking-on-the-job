@@ -38,22 +38,23 @@ Model/
 |   ├── A_lifecycle_model_of_risk_taking_on_the_job.ipynb   # Working notebook
 │   └── ModelFitting_Results.Rmd                            # Rmarkdown showing the main results (backup code/not used)
 │
-├── src/                                # Source code 
-│   └── 00_main.jl                      # Main module
-│        ├── 01_dictionaries.jl         # Defines the dictionaries for all the simulations
-│        ├── 02a_param_struct.jl        # Sets the struct for the parameters
-│        ├── 02b_parameters.jl          # Sets the parameter values
-│        ├── 02c_parameter_functions.jl # Extra functions necessary for setting the individual parameters
-│        ├── 03_init_parallel.jl        # Parallelization function
-│        ├── 04_functions_micro.jl      # Microeconomic functions
-│        ├── 05_equilibrium_prices.jl   # Computes macroeconomic aggregates and find equilibirum prices
-│        ├── 06_plots_benchmark.jl      # Plots main results of the benchmark simulation
-│        ├── 07_database.jl             # Generates the results database
-│        └── 08_results.jl              # Generates results for Figures 4,5,6,7 and Tables 2,3,4,5
+├── src/                                                    # Source code 
+│   └── 00_main.jl                                          # Main module
+│        ├── 01_dictionaries.jl                             # Defines the dictionaries for all the simulations
+│        ├── 02a_param_struct.jl                            # Sets the struct for the parameters
+│        ├── 02b_parameters.jl                              # Sets the parameter values
+│        ├── 02c_parameter_functions.jl                     # Extra functions necessary for setting the individual parameters
+│        ├── 03_init_parallel.jl                            # Parallelization function
+│        ├── 04_functions_micro.jl                          # Microeconomic functions
+│        ├── 05_equilibrium_prices.jl                       # Computes macroeconomic aggregates and find equilibirum prices
+│        ├── 06_plots_benchmark.jl                          # Plots main results of the benchmark simulation
+│        ├── 07_database.jl                                 # Generates the results database
+│        ├── 08a_results_dataframe.jl                       # Compile all dataframes
+│        └── 08b_results_tables_and_figures.jl              # Generates results for Figures 4,5,6,7 and Tables 2,3,4,5
 │
-├── results/                            # Output datasets (all csv/rds files)
+├── results/                                                # Output datasets (all csv/rds files)
 │
-├── plots/                              # Output plots of the article
+├── plots/                                                  # Output plots of the article
 └── README.txt
 ```
 

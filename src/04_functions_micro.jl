@@ -223,11 +223,8 @@ end;
 function VectorPreallocation(N)
     
     ucl, ucu, cl, cu, ul, uu = zeros(N), zeros(N), zeros(N), zeros(N), zeros(N), zeros(N)
-
     wl, wu, ewl, ewu         = zeros(N), zeros(N), zeros(N), zeros(N)
-
     wv, yv, πv               = zeros(N), zeros(N), zeros(N) 
-
     al, au                   = zeros(N), zeros(N)
     
     return ucl, ucu, cl, cu, uu, wl, wu, ewl, ewu, wv, yv, πv, al, au
@@ -235,8 +232,8 @@ end;
 
 function Interpol(x,y,Grid)
     # This function gives the new interpolated values of y for Grid 
-    f  =LinearInterpolation(x, y,extrapolation_bc=Line())
-    new=f.(Grid)
+    f   = LinearInterpolation(x, y,extrapolation_bc=Line())
+    new = f.(Grid)
     return new
 end;
 
@@ -257,7 +254,7 @@ function Parallel(Ret,πRr,s,pθ,σy,λ,ȳ,
     
     dt              = 1.0/Par_U.ppy    
     β               = Par_U.β
-    σC              = Par_U.σC
+    σC              = Par_M.σC
 
     E               = Par_U.E
     MaxLength::Int  = (120-E)*Par_U.ppy
@@ -332,7 +329,7 @@ function profiles(cu,cl,w,out,π,ewl,ewu,Ret,s,pθ,πR,z,τ,R,
     πU       = Par_M.πU
     E        = Par_U.E
     ppy      = Par_U.ppy
-    σC       = Par_U.σC
+    σC       = Par_M.σC
     
     WorkL    = (Ret-E)*ppy
     dt       = 1.0/ppy
@@ -385,7 +382,7 @@ function ReactionFunctions(Ret,πRi,s,pθ,σy,λ,ȳ,
     AGrid      = Par_U.Assets
     E          = Par_U.E
     ppy        = Par_U.ppy
-    σC         = Par_U.σC
+    σC         = Par_M.σC
     β          = Par_U.β
     πU         = Par_M.πU
     

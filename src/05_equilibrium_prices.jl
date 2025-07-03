@@ -23,11 +23,13 @@ function fequilibrium_prices(R0,tau0,Scenario,sample_size,Par_U::Params_Unmut)
         ###############################################################################################
         
         # Population size at each age 
-        PopC  = IPS(Par_U,ParM)
+        PopC     = IPS(Par_U,ParM)
         
         
-        argFinal = (fκs(Scenario,Par_U,ParM),fss(Scenario,ParM),
-                        fσys(Scenario,Par_U,ParM),fλys(Scenario,Par_U,ParM),
+        argFinal = (fκs(Scenario,Par_U,ParM),
+                        fss(Scenario,ParM),
+                        fσys(Scenario,Par_U,ParM),
+                        fλys(Scenario,Par_U,ParM),
                         zv,τs,wages,Rs,
                         Par_U,ParM)
                 

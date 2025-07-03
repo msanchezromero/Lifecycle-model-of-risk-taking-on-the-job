@@ -7,7 +7,6 @@ ns            = 1.00^(1.0/ppys)-1.0   # Population growth rate
 ds            = 0.0                   # Disutility of labor
 χs            = 1.0                   # Marginal impact of survival on the disutility of labor
 βs            = 1.000^(1.0/ppys)      # Intertemporal discounting
-σCs           = 0.8685                # Inverse elasticity of substitution (note: modify the program)
 
 """Sensitivity"""
 Iter_Sensitivity = 1
@@ -44,7 +43,7 @@ ParU          = Params_Unmut(
                     ppys,
                     EntAge,
                     ns,
-                    ds,χs,βs,σCs,
+                    ds,χs,βs,
                     σys,σys_l,σys_h,
                     λs,λs_l,λs_h,
                     αYs,δYs,
@@ -53,7 +52,14 @@ ParU          = Params_Unmut(
 # Mutable struct function
 function mutable_struct(Scenario,sample_size,Par_U::Params_Unmut)
 
-    ppy = Par_U.ppy
+    # Inverse elasticity of substitution (note: modify the program)
+    σCs    = if Scenario>10
+                0.8900
+             else 
+                0.8685                
+             end
+    
+    ppy    = Par_U.ppy
     
     Rets   = if (Scenario==2 || Scenario==12) 
                 70 
@@ -91,7 +97,7 @@ function mutable_struct(Scenario,sample_size,Par_U::Params_Unmut)
     ȳ_mean        = (exp(6.60)/1.0595674074074075)    
     #"""1.5215 $4057 for high skill relative to $2666.5 for low skill in the age group 35-44"""
     ȳ_highlow     = (Scenario==10) ? 1.5215 : ((Scenario>10) ? 1.25 : 1.00 );  
-    #"""88.5 million workers in the low skill group out of 127.9 million workers"""
+    # Share in population: 88.5 million workers in the low skill group out of 127.9 million workers
     α_low         = 0.692 
     ȳ_low         = ȳ_mean/(α_low+(1.0-α_low)*ȳ_highlow)
     ȳ_high        = ȳ_highlow*ȳ_low
@@ -104,6 +110,7 @@ function mutable_struct(Scenario,sample_size,Par_U::Params_Unmut)
     RetAge_Sample = rand(Rets:Rets,sample_size);
     
     return Params_Mut(Scenario,
+                        σCs,
                         ȳ_mean,
                         ȳ_Sample,
                         Rets,

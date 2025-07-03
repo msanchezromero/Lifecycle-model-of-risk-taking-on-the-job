@@ -160,8 +160,16 @@ end
 # -------------------------------------------------------------------------------------
 # Table 4: 
 # -------------------------------------------------------------------------------------
-function f_results_table4(data)
+function f_results_table4(data,sample_size,Par_U::Params_Unmut)
+
+    ParM01 = mutable_struct( 1,sample_size,Par_U)
+    ParM11 = mutable_struct(11,sample_size,Par_U)
     
+    sigmaG01 = ParM01.σC
+    sigmaG11 = ParM01.σC
+    
+    @rput sigmaG01
+    @rput sigmaG11   
     @rput data
     R"""
     suppressWarnings({
@@ -173,8 +181,9 @@ function f_results_table4(data)
     library(dplyr)
     library(kableExtra)
     
-    sigmaG = as.numeric(Sigma) # This is the value of sigma_G
-    tbl6<-data %>% subset(Age<1200 & !(Simu %in% c("Exp4","Exp5","Exp6","Exp7","Exp8"))) %>%
+    tbl4<-data %>% 
+        subset(Age<1200 & !(Simu %in% c("Exp4","Exp5","Exp6","Exp7","Exp8"))) %>%
+        mutate(sigmaG = ifelse(Simu %in% c("Exp5", "Exp6", "Exp7", "Exp8"), sigmaG11, sigmaG01)) %>%
       group_by(Simu,Ind) %>% 
         mutate(
           IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
@@ -192,11 +201,10 @@ function f_results_table4(data)
         summarize(Lambda=round(100*mean(Li),2)) %>% spread(Simu, Lambda) 
     
     kableExtra:::kbl(
-      tbl6,
+      tbl4,
       booktabs = T,
-      caption="Table 6: Welfare effects of pension reforms and ageing by exact age. Ref=Benchmark (mean values, in %)",
-      format="simple") #%>%
-      #kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+      caption="Table 4: Welfare effects of pension reforms and ageing by exact age. Ref=Benchmark (mean values, in %)",
+      format="simple") 
     """
 
 end
@@ -205,10 +213,16 @@ end
 # -------------------------------------------------------------------------------------
 # Table 5: 
 # -------------------------------------------------------------------------------------
-function f_results_table5(data,Par_U::Params_Unmut)
+function f_results_table5(data,sample_size,Par_U::Params_Unmut)
+
+    ParM01 = mutable_struct( 1,sample_size,Par_U)
+    ParM11 = mutable_struct(11,sample_size,Par_U)
     
-    sigmaG = Par_U.σC
-    @rput sigmaG
+    sigmaG01 = ParM01.σC
+    sigmaG11 = ParM01.σC
+    
+    @rput sigmaG01
+    @rput sigmaG11
     @rput data
     R"""
     suppressWarnings({
@@ -220,33 +234,256 @@ function f_results_table5(data,Par_U::Params_Unmut)
     library(dplyr)
     library(kableExtra)
         
-    tbl6b<-data %>% subset(Age<1200 & !(Simu %in% c("Benchmark","Exp1","Exp2","Exp3","Exp4"))) %>%
-      group_by(Simu,Productivity,Ind) %>% 
-        mutate(
-          IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
-          IUtil.d=Survival*(Consumption^(1-1/sigmaG))/(1-1/sigmaG),
-          ) %>% 
-      group_by(Simu,Productivity,Ind) %>% 
-        mutate(
-          #LE     =sum(Survival)/12,
-          EUtil  =(sum(IUtil)+IUtil-cumsum(IUtil))/Survival,
-          EUtil.d=(sum(IUtil.d)+IUtil.d-cumsum(IUtil.d))/Survival) %>% 
-      group_by(Productivity,Ind) %>% 
-        mutate(Li=1-(1+(EUtil[Simu=="Exp5"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
-        subset(Age2 %in% c(20,30,40,50,60)) %>%
-      group_by(Simu,Productivity,Age2) %>% 
-        summarize(Lambda=round(100*mean(Li),2)) %>% spread(Simu, Lambda) 
+    tbl5<-data %>% 
+            subset(Age<1200 & !(Simu %in% c("Benchmark","Exp1","Exp2","Exp3","Exp4"))) %>%
+            mutate(sigmaG = ifelse(Simu %in% c("Exp5", "Exp6", "Exp7", "Exp8"), sigmaG11, sigmaG01)) %>%
+            group_by(Simu,Productivity,Ind) %>% 
+            mutate(
+              IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
+              IUtil.d=Survival*(Consumption^(1-1/sigmaG))/(1-1/sigmaG),
+              ) %>% 
+            group_by(Simu,Productivity,Ind) %>% 
+            mutate(
+              #LE     =sum(Survival)/12,
+              EUtil  =(sum(IUtil)+IUtil-cumsum(IUtil))/Survival,
+              EUtil.d=(sum(IUtil.d)+IUtil.d-cumsum(IUtil.d))/Survival) %>% 
+            group_by(Productivity,Ind) %>% 
+            mutate(Li=1-(1+(EUtil[Simu=="Exp5"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
+            subset(Age2 %in% c(20,30,40,50,60)) %>%
+            group_by(Simu,Productivity,Age2) %>% 
+            summarize(Lambda=round(100*mean(Li),2)) %>% spread(Simu, Lambda) 
     
     kableExtra:::kbl(
-      tbl6b,
+      tbl5,
       booktabs = T,
-      caption="Table 6b: Welfare effects of pension reforms and ageing by exact age. Ref=Benchmark (mean values, in %)",
+      caption="Table 5: Welfare effects of pension reforms and ageing by exact age. Ref=Benchmark (mean values, in %)",
       format="simple") #%>%
       #kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
     
     """
 
 end
+
+
+
+# -------------------------------------------------------------------------------------
+# Table A3: 
+# -------------------------------------------------------------------------------------
+function f_results_tableA3(data)
+    # Table A3: Descriptive statistics of four alternative simulations
+    # (Period: Month)
+
+    @rput data
+    R"""    
+
+    install.packages("radiant.data", repos = "https://cloud.r-project.org")
+    
+    library(tidyr)
+    library(dplyr)
+    library(kableExtra)
+    
+    # Our simulations are based on a stationary population with 500 new individuals born each month. 
+    # For simplicity, we standardized the values in the Table to 1000 individuals annually.
+    AdjFactor<-(1000/(12*500))
+    popgrowth<-1.00^(1/12)
+    
+    tblA3.top<-data %>% subset(Simu!=c("Exp4")) %>%
+      mutate(popC=popgrowth^(1-Age)) %>%
+      group_by(Simu) %>% 
+      summarize(
+        N=round(sum(Survival*popC)*AdjFactor,0),
+        L=round(sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor,0),
+        U=round(sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor,0),
+        R=round(sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor,0),
+        U_rate=round(100*U/(L+U),2)) %>%   
+      gather(Variable, Value, N:U_rate, factor_key=TRUE) %>% 
+      spread(Simu, Value) 
+    
+    kableExtra:::kbl(
+      tblA3.top,
+      format = "pandoc",  
+      booktabs = T,
+      caption="Table A3: Descriptive statistics of four alternative simulations (Period: Month)") #%>%
+      #kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+    
+    
+    tblA3.bottom<-data %>% subset(Simu!="Exp4") %>% 
+      mutate(popC  =popgrowth^(1-Age),
+             weight=Survival*popC/sum(Survival*popC),
+             weight1 = 1,
+             Mx    =-100000*12*log(1-MortalityJob/100000)) %>%
+      subset(Employment==1 & (Age2<65.0)) %>% 
+      mutate(F.L=Wages/Output) %>% 
+      group_by(Simu) %>% 
+      summarize(
+        mT.mean  =round(weighted.mean(Mortality,w=weight),2),
+        mT.sd    =round(radiant.data::weighted.sd(x = Mortality, wt = weight),2),
+        m.mean   =round(weighted.mean(MortalityJob,w=weight),2),
+        m.sd     =round(radiant.data::weighted.sd(x = MortalityJob, wt = weight),2),
+        mu.mean  =round(weighted.mean(Mx,w=weight),2),
+        mu.sd    =round(radiant.data::weighted.sd(x = Mx, wt = weight),2),
+        w.mean   =round(weighted.mean(Wages,w=weight),0),
+        w.sd     =round(radiant.data::weighted.sd(x = Wages, wt = weight),0),
+        y.mean   =round(weighted.mean(Wages/0.66,w=weight),0),
+        y.sd     =round(radiant.data::weighted.sd(x = Wages/0.66, wt = weight),0),
+        c.mean   =round(weighted.mean(Consumption,w=weight),0),
+        c.sd     =round(radiant.data::weighted.sd(x = Consumption, wt = weight),0),
+        a.mean   =round(weighted.mean(Assets,w=weight)/1000,0),
+        a.sd     =round(radiant.data::weighted.sd(x = Assets, wt = weight)/1000,0),
+    #    K.mean   =round(sum(Assets*Survival*popC)/1000,0),
+    #    K.sd     =round(radiant.data::weighted.sd(x = Assets*Survival*popC, wt = weight1)/1000,0),
+        vol.mean =round(weighted.mean(VOL,w=weight)/1000,0),
+        vol.sd   =round(radiant.data::weighted.sd(x = VOL, wt = weight)/1000,0),
+        t.mean   =weighted.mean(Tax,w=weight),
+        r.mean   =round(100*(0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)),2)) %>%  
+      gather(Variable, Value, mT.mean:r.mean, factor_key=TRUE) 
+    
+    tblA3.bottom$type<-c(rep(c(rep("Mean",8),rep("SD",8)),8),rep(c(rep("Mean",8)),2))
+    tblA3.bottom<-tblA3.bottom %>% mutate(Variable=case_when(
+        Variable=="mT.mean"  ~ "1.mT",
+        Variable=="mT.sd"    ~ "1.mT",
+        Variable=="m.mean"   ~ "2.m",
+        Variable=="m.sd"     ~ "2.m",
+        Variable=="mu.mean"  ~ "3.mu",
+        Variable=="mu.sd"    ~ "3.mu",
+        Variable=="w.mean"   ~ "4.w",
+        Variable=="w.sd"     ~ "4.w",
+        Variable=="y.mean"   ~ "5.y",
+        Variable=="y.sd"     ~ "5.y",    
+        Variable=="c.mean"   ~ "6.c",
+        Variable=="c.sd"     ~ "6.c",    
+        Variable=="a.mean"   ~ "7.a",
+        Variable=="a.sd"     ~ "7.a",
+        #Variable=="K.mean"  ~ "11.a",
+        #Variable=="K.sd"    ~ "11.a",    
+        Variable=="vol.mean" ~ "8.vol",
+        Variable=="vol.sd"   ~ "8.vol",    
+        Variable=="t.mean"   ~ "9.t",
+        Variable=="r.mean"   ~ "10.r")) %>% spread(type, Value) 
+    
+    kableExtra:::kbl(
+      cbind(
+        tblA3.bottom %>% subset(Simu=="Benchmark") %>% select(Variable,Mean,SD),
+        tblA3.bottom %>% subset(Simu=="Exp1") %>% select(Mean,SD),
+        tblA3.bottom %>% subset(Simu=="Exp2") %>% select(Mean,SD),
+        tblA3.bottom %>% subset(Simu=="Exp3") %>% select(Mean,SD)),
+      format = "pandoc",
+      booktabs = T,
+      col.names=c("",paste0(rep(c("Mean","SD"),4))),
+      caption="Table A3: Descriptive statistics of four alternative simulations (Period: Month)") #%>%
+      #kableExtra:::add_header_above(c("", "Benchmark" = 2, "Exp1"=2,"Exp2"=2,"Exp3"=2, "Exp5"=2)) %>%
+      #kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+    """
+
+end
+
+
+
+# -------------------------------------------------------------------------------------
+# Table A7: 
+# -------------------------------------------------------------------------------------
+function f_results_tableA7(data)
+    #Table A7: Descriptive statistics of Exp 5 under different skill groups
+    #(Period: Month)
+
+    @rput data    
+    R"""
+    # Our simulations are based on a stationary population with 500 new individuals born each month. 
+    # For simplicity, we standardized the values in the Table to 1000 individuals annually.
+    AdjFactor<-(1000/(12*500))
+    popgrowth<-1.00^(1/12)
+    
+    tblA7.top<-data %>% subset(Simu %in% c("Exp5","Exp6","Exp7","Exp8")) %>%
+      mutate(popC=popgrowth^(1-Age)) %>%
+      group_by(Simu,Productivity) %>% 
+      summarize(
+        N=round(sum(Survival*popC)*AdjFactor,0),
+        L=round(sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor,0),
+        U=round(sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor,0),
+        R=round(sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor,0),
+        U_rate=round(100*U/(L+U),2)) %>%   
+      gather(Variable, Value, N:U_rate, factor_key=TRUE) %>% 
+      spread(Simu, Value) 
+    
+    kableExtra:::kbl(
+      tblA7.top,
+      booktabs = T,
+      format = "pandoc",
+      caption="Table A7: Descriptive statistics of Experiment 5 by skill group (Period: Month)") 
+    
+    
+    
+    tblA7.bottom<-data %>% 
+      subset(Simu %in% c("Exp5","Exp6","Exp7","Exp8")) %>% 
+      mutate(Simu = case_when( 
+                            Simu=="Exp5" ~ "Benchmark",
+                            Simu=="Exp6" ~ "Exp1",
+                            Simu=="Exp7" ~ "Exp2",
+                            Simu=="Exp8" ~ "Exp3")
+            ) %>%
+      mutate(popC  =popgrowth^(1-Age),
+             weight=Survival*popC/sum(Survival*popC),
+             Mx    =-100000*12*log(1-MortalityJob/100000)) %>%
+      subset(Employment==1 & (Age2<65.0)) %>% 
+      mutate(F.L=Wages/Output) %>% 
+      group_by(Simu,Productivity) %>% 
+      summarize(
+        mT.mean=round(weighted.mean(Mortality,w=weight),2),
+        mT.sd=round(radiant.data::weighted.sd(x = Mortality, wt = weight),2),
+        m.mean=round(weighted.mean(MortalityJob,w=weight),2),
+        m.sd=round(radiant.data::weighted.sd(x = MortalityJob, wt = weight),2),
+        mu.mean=round(weighted.mean(Mx,w=weight),2),
+        mu.sd=round(radiant.data::weighted.sd(x = Mx, wt = weight),2),
+        w.mean=round(weighted.mean(Wages,w=weight),0),
+        w.sd=round(radiant.data::weighted.sd(x = Wages, wt = weight),0),
+        y.mean=round(weighted.mean(Wages/0.66,w=weight),0),
+        y.sd=round(radiant.data::weighted.sd(x = Wages/0.66, wt = weight),0),
+        c.mean=round(weighted.mean(Consumption,w=weight),0),
+        c.sd=round(radiant.data::weighted.sd(x = Consumption, wt = weight),0),
+        a.mean=round(weighted.mean(Assets,w=weight)/1000,0),
+        a.sd=round(radiant.data::weighted.sd(x = Assets, wt = weight)/1000,0),
+        vol.mean=round(weighted.mean(VOL,w=weight)/1000,0),
+        vol.sd=round(radiant.data::weighted.sd(x = VOL, wt = weight)/1000,0),
+        t.mean=weighted.mean(Tax,w=weight),
+        r.mean=round(100*(0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)),2)) %>%  
+      gather(Variable, Value, mT.mean:r.mean, factor_key=TRUE) 
+    
+    tblA7.bottom$type<-c(rep(c(rep("Mean",8),rep("SD",8)),8),rep(c(rep("Mean",8)),2))
+    tblA7.bottom<-tblA7.bottom %>% mutate(Variable=case_when(
+        Variable=="mT.mean" ~ "1.mT",
+        Variable=="mT.sd"   ~ "1.mT",
+        Variable=="m.mean"  ~ "2.m",
+        Variable=="m.sd"    ~ "2.m",
+        Variable=="mu.mean" ~ "3.mu",
+        Variable=="mu.sd"   ~ "3.mu",
+        Variable=="w.mean"  ~ "4.w",
+        Variable=="w.sd"    ~ "4.w",
+        Variable=="y.mean"  ~ "5.y",
+        Variable=="y.sd"    ~ "5.y",    
+        Variable=="c.mean"  ~ "6.c",
+        Variable=="c.sd"    ~ "6.c",    
+        Variable=="a.mean"  ~ "7.a",
+        Variable=="a.sd"    ~ "7.a",    
+        Variable=="vol.mean"~ "8.vol",
+        Variable=="vol.sd"  ~ "8.vol",    
+        Variable=="t.mean"  ~ "9.t",
+        Variable=="r.mean"  ~ "10.r")) %>% spread(type, Value) 
+    
+    
+    kableExtra:::kbl(
+      cbind(
+        tblA7.bottom %>% subset(Productivity==unique(tblA7.bottom$Productivity)[1]) %>% select(Variable,Mean,SD),
+        tblA7.bottom %>% subset(Productivity==unique(tblA7.bottom$Productivity)[2]) %>% select(Mean,SD)
+            ),
+      booktabs = T,
+      format = "pandoc",
+      col.names=c("",paste0(rep(c("","Mean","SD"),2))),
+      caption="Table A7: Descriptive statistics of Experiment 5 by skill group (Period: Month)") 
+    
+    """
+
+end
+
 
 # -------------------------------------------------------------------------------------
 # Figure 4: 
@@ -280,39 +517,14 @@ function f_results_figure4(data)
       3049.0592,3054.36,3050.1632,2998.7936,2997.0128)
     
     
-    inc.wagelow<-c(1899.555,1935.812,1962.56,2025.365,
-                   2050.393,2228.502,2285.198,2325.334,
-                   2363.148,2364.002,2410.928,2447.561,
-                   2439.85,2481.682,2496.911,2631.989,
-                   2642.081,2675.14,2621.059,2637.175,
-                   2673.44,2689.062,2688.423,2711.995,
-                   2694.753,2719.02,2714.095,2752.417,
-                   2728.322,2719.82,2755.376,2768.307,
-                   2740.702,2742.118,2749.24,2756.414,
-                   2774.55,2753.729,2761.51,2725.94,
-                   2729.736,2663.436,2686.991,2619.071,2643.466)
     
-    inc.wagehigh<-c(2676.216,2649.775,2620.351,2621.681,
-                    2654.408,2994.087,3214.443,3179.956,
-                    3331.059,3385.082,3553.685,3602.22,
-                    3634.531,3633.007,3608.932,3942.893,
-                    3991.166,4025.641,3989.256,4023.253,
-                    4069.254,4090.107,4126.373,4190.594,
-                    4121.438,4157.045,4123.25,4161.691,
-                    4159.839,4040.368,4087.472,4148.912,
-                    4204.439,4140.462,4297.942,4336.736,
-                    4374.844,4277.884,4254.392,4428.364,
-                    4174.511,4377.107,4347.422,4404.752,4279.617)
-    
-    inc.data<-data.frame(inc.ages,inc.wage,inc.wagelow,inc.wagehigh)
+    inc.data<-data.frame(inc.ages,inc.wage)
     
     x.a<-c(22,30,40,50,60)
     y.a<-c(22504,42702,55620,60126,58569)
     y.b<-c(2.23,2.61,2.87,3.49,4.46)
-    y.l<-c(3.5452,4.0143,4.6064,5.4541,6.6608)
-    y.h<-c(0.2656,0.4711,0.5554,0.5719,0.7783)
     
-    d<-data.frame(x.a,y.a,y.b,y.l,y.h)
+    d<-data.frame(x.a,y.a,y.b)
     
     fig4.A<-data %>% 
       subset((Employment==1) & (Simu=="Benchmark")) %>% 
@@ -374,6 +586,133 @@ function f_results_figure4(data)
     
     ggsave("../plots/Figure_4.png", fig4, width = 21*0.6, height = 7*0.6, dpi=300)
     fig4    
+    """
+
+end
+
+# -------------------------------------------------------------------------------------
+# Figure A4: 
+# -------------------------------------------------------------------------------------
+function f_results_figureA4(data)
+    
+    @rput data
+    R"""
+    #Figure 4. Age profiles of annual labor income (A), wealth (B), and the
+    #conditional mortality on the job (C). Grey areas indicate 2.5% and 97.5%
+    #percentiles of the simulated distribution. Red points indicate the data.
+    #Case: Benchmark. Data source: CFOI, ACS, own simulations.
+
+    options(warn = -1)  # Turn off warnings
+    library("dplyr")
+    library("ggplot2")
+    library("ggpmisc")
+    library("gridExtra")
+    
+    # Income data: CPS data
+    
+    inc.ages<-c(20:64)
+    
+    
+    inc.wagelow<-c(1899.555,1935.812,1962.56,2025.365,
+                   2050.393,2228.502,2285.198,2325.334,
+                   2363.148,2364.002,2410.928,2447.561,
+                   2439.85,2481.682,2496.911,2631.989,
+                   2642.081,2675.14,2621.059,2637.175,
+                   2673.44,2689.062,2688.423,2711.995,
+                   2694.753,2719.02,2714.095,2752.417,
+                   2728.322,2719.82,2755.376,2768.307,
+                   2740.702,2742.118,2749.24,2756.414,
+                   2774.55,2753.729,2761.51,2725.94,
+                   2729.736,2663.436,2686.991,2619.071,2643.466)
+    
+    inc.wagehigh<-c(2676.216,2649.775,2620.351,2621.681,
+                    2654.408,2994.087,3214.443,3179.956,
+                    3331.059,3385.082,3553.685,3602.22,
+                    3634.531,3633.007,3608.932,3942.893,
+                    3991.166,4025.641,3989.256,4023.253,
+                    4069.254,4090.107,4126.373,4190.594,
+                    4121.438,4157.045,4123.25,4161.691,
+                    4159.839,4040.368,4087.472,4148.912,
+                    4204.439,4140.462,4297.942,4336.736,
+                    4374.844,4277.884,4254.392,4428.364,
+                    4174.511,4377.107,4347.422,4404.752,4279.617)
+    
+    inc.data<-data.frame(inc.ages,inc.wagelow,inc.wagehigh)
+    
+    x.a<-c(22,30,40,50,60)
+    y.a<-c(22504,42702,55620,60126,58569)
+    y.b<-c(2.23,2.61,2.87,3.49,4.46)
+    y.l<-c(3.5452,4.0143,4.6064,5.4541,6.6608)
+    y.h<-c(0.2656,0.4711,0.5554,0.5719,0.7783)
+    
+    d<-data.frame(x.a,y.a,y.b,y.l,y.h)
+    
+ 
+    figA4.A<-ggplot(data=data %>% subset((Employment==1) & (Simu=="Exp5")),
+              aes(x=Age2,
+                 y=Wages))+
+      geom_line(stat = "identity", aes(color = factor(Productivity)),cex=1.5)+
+      scale_color_manual(name="",values = c("black", "gray"))+
+      geom_point(data=inc.data,
+                 aes(x=inc.ages,y=inc.wagelow),
+                 color="red",cex=1)+
+      geom_point(data=inc.data,
+                 aes(x=inc.ages,y=inc.wagehigh),
+                 color="red",cex=1)+
+      labs(x="Age",y="Monthly wage rate (in $)",legend="")+
+      ylim(0,5000)+
+      theme_bw()+
+      theme(legend.position  = "none",
+            panel.border     = element_blank(), 
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(), 
+            axis.line        = element_line(colour = "black"))
+    
+    figA4.B<-ggplot(data=data %>% subset(Simu=="Exp5"),
+                    aes(x=Age2,y=Assets/1000))+
+      geom_line(stat="identity",
+                aes(color=factor(Productivity)))+
+      scale_color_manual(name="",values = c("black", "gray"))+
+      labs(x="Age",y="Wealth (in $1K)")+
+      theme_bw()+
+      theme(panel.border = element_blank(), 
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(), 
+            axis.line = element_line(colour = "black"),
+            legend.position = "none")
+    
+    figA4.C<-ggplot(data=data %>% subset((Employment==1) & (Simu=="Exp5")),
+             aes(x=Age2,
+                 y=-100000*12*log(1-MortalityJob/100000)))+
+      geom_line(stat="identity",
+                aes(color=factor(Productivity)))+
+      scale_color_manual(name="", values = c("black", "gray"))+
+      geom_point(data=d,aes(x=x.a,y=y.l),color="red",cex=1.5)+
+      geom_point(data=d,aes(x=x.a,y=y.h),color="red",cex=1.5)+
+      xlim(20,64)+
+      labs(x="Age",
+           y="On-the-job mortality rate (per 100k)",
+           )+
+      theme_bw()+
+      theme(legend.position="none",
+            panel.border = element_blank(), 
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(), 
+            axis.line = element_line(colour = "black"))
+    
+    
+    
+    ggsave("../plots/Figure_A4a.png", figA4.A, width = 0.33*21*0.6, height = 7*0.6, dpi=300)
+    ggsave("../plots/Figure_A4b.png", figA4.B, width = 0.33*21*0.6, height = 7*0.6, dpi=300)
+    ggsave("../plots/Figure_A4c.png", figA4.C, width = 0.33*21*0.6, height = 7*0.6, dpi=300)
+
+    
+    figA4<-grid.arrange(figA4.A, figA4.B, figA4.C,  
+                 ncol = 3, nrow = 1, heights=c(2),
+                 widths=c(2,2,2))
+    
+    ggsave("../plots/Figure_A4.png", figA4, width = 21*0.6, height = 7*0.6, dpi=300)
+    figA4    
     """
 
 end

@@ -12,7 +12,7 @@ using Random, LinearAlgebra, StatsBase
 
 display(CaseScenario)
 # ----- Uncomment for parallelizing using Distributed ------
-addprocs((CaseScenario==1) ? 2 : 0)
+addprocs((CaseScenario==11) ? 3 : 0)
 # ------- Uncomment for parallelizing using Threads --------
 #println(Threads.nthreads()) 
 # ----------------------------------------------------------

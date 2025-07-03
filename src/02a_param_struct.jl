@@ -7,7 +7,6 @@ Unmutable Parameters:
 - d      "Disutility of labor";
 - χ      "Marginal impact of survival on the disutility of labor";
 - β      "Intertemporal discounting";
-- σC     "Inverse elasticity of substitution";
 - σy     "Elasticity output to on-the-job risk";
 - σy_l   "Elasticity output to on-the-job risk (low)";
 - σy_h   "Elasticity output to on-the-job risk (high)";  
@@ -28,7 +27,6 @@ struct Params_Unmut
     d::Float64
     χ::Float64
     β::Float64
-    σC::Float64
     σy::Float64
     σy_l::Float64
     σy_h::Float64
@@ -46,6 +44,7 @@ end;
 """
 Mutable Parameters:
 - Scenario "Scenario"
+- σC       "Inverse elasticity of substitution";
 - y_mean   "Mean income"
 - y_samp   "Income sample"
 - R        "Exit age"
@@ -60,6 +59,7 @@ Mutable Parameters:
 """
 mutable struct Params_Mut
     Scenario::Int64
+    σC::Float64
     y_mean::Float64
     y_sample::Vector{Float64}
     R::Int64

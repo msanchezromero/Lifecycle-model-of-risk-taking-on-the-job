@@ -7,10 +7,10 @@ function f_results_table2(data)
     
     @rput data
     R"""
-    suppressWarnings({
-    install.packages("stargazer", repos = "https://cloud.r-project.org")
-    install.packages("kableExtra", repos = "https://cloud.r-project.org")
-    })
+    #suppressWarnings({
+    #install.packages("stargazer",  repos = "https://cloud.r-project.org")
+    #install.packages("kableExtra", repos = "https://cloud.r-project.org")
+    #})
     library("stargazer")
     library(tidyr)
     library(dplyr)
@@ -29,7 +29,7 @@ function f_results_table2(data)
       summarize(
         w=mean(Wages),
         VSL=tb2.all1$coefficients[1,1]*w*0.1,
-        VOL=mean(VOL)/1000000) 
+        VOL=mean(VOL)/1000000, .groups = "drop") 
     
     tb2.all<-cbind(t(tb2.all1$coefficients[1,1:2]),data.frame(tb2.all2))
       
@@ -44,7 +44,7 @@ function f_results_table2(data)
       summarize(
         w=mean(Wages),    
         VSL=tb2.40_1$coefficients[2,1]*w*0.1,
-        VOL=mean(VOL)/1000000)
+        VOL=mean(VOL)/1000000, .groups = "drop")
     
     tb2.40<-cbind(t(tb2.40_1$coefficients[2,1:2]),data.frame(tb2.40_2))
     
@@ -60,7 +60,7 @@ function f_results_table2(data)
       summarize(
         w=mean(Wages),
         VSL=tb2.50_1$coefficients[2,1]*w*0.1,
-        VOL=mean(VOL)/1000000)
+        VOL=mean(VOL)/1000000, .groups = "drop")
     
     tb2.50<-cbind(t(tb2.50_1$coefficients[2,1:2]),data.frame(tb2.50_2))
     
@@ -76,7 +76,7 @@ function f_results_table2(data)
       summarize(
         w=mean(Wages),
         VSL=tb2.60_1$coefficients[2,1]*w*0.1,
-        VOL=mean(VOL)/1000000)
+        VOL=mean(VOL)/1000000, .groups = "drop")
     
     tb2.60<-cbind(t(tb2.60_1$coefficients[2,1:2]),data.frame(tb2.60_2))
     
@@ -100,8 +100,7 @@ function f_results_table2(data)
       tb2.final,
       booktabs = T,
       caption="Value of a statistical life overall and by age",
-      format="simple") #%>%
-      #kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+      format="simple") 
     
     """
 
@@ -115,9 +114,9 @@ function f_results_table3(data)
     
     @rput data
     R"""
-    suppressWarnings(
-    install.packages("stargazer", repos = "https://cloud.r-project.org")
-    )
+    #suppressWarnings(
+    #install.packages("stargazer", repos = "https://cloud.r-project.org")
+    #)
     library("stargazer")
     library(tidyr)
     library(dplyr)
@@ -172,10 +171,10 @@ function f_results_table4(data,sample_size,Par_U::Params_Unmut)
     @rput sigmaG11   
     @rput data
     R"""
-    suppressWarnings({
-    install.packages("stargazer", repos = "https://cloud.r-project.org")
-    install.packages("kableExtra", repos = "https://cloud.r-project.org")
-    })
+    #suppressWarnings({
+    #install.packages("stargazer", repos = "https://cloud.r-project.org")
+    #install.packages("kableExtra", repos = "https://cloud.r-project.org")
+    #})
     library("stargazer")
     library(tidyr)
     library(dplyr)
@@ -198,7 +197,7 @@ function f_results_table4(data,sample_size,Par_U::Params_Unmut)
         mutate(Li=1-(1+(EUtil[Simu=="Benchmark"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
         subset(Age2 %in% c(20,30,40,50,60)) %>%
       group_by(Simu,Age2) %>% 
-        summarize(Lambda=round(100*mean(Li),2)) %>% spread(Simu, Lambda) 
+        summarize(Lambda=round(100*mean(Li),2), .groups = "drop") %>% spread(Simu, Lambda) 
     
     kableExtra:::kbl(
       tbl4,
@@ -225,40 +224,45 @@ function f_results_table5(data,sample_size,Par_U::Params_Unmut)
     @rput sigmaG11
     @rput data
     R"""
-    suppressWarnings({
-    install.packages("stargazer", repos = "https://cloud.r-project.org")
-    install.packages("kableExtra", repos = "https://cloud.r-project.org")
-    })
+    #suppressWarnings({
+    #install.packages("stargazer", repos = "https://cloud.r-project.org")
+    #install.packages("kableExtra", repos = "https://cloud.r-project.org")
+    #})
     library("stargazer")
     library(tidyr)
     library(dplyr)
     library(kableExtra)
         
     tbl5<-data %>% 
-            subset(Age<1200 & !(Simu %in% c("Benchmark","Exp1","Exp2","Exp3","Exp4"))) %>%
-            mutate(sigmaG = ifelse(Simu %in% c("Exp5", "Exp6", "Exp7", "Exp8"), sigmaG11, sigmaG01)) %>%
-            group_by(Simu,Productivity,Ind) %>% 
-            mutate(
-              IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
-              IUtil.d=Survival*(Consumption^(1-1/sigmaG))/(1-1/sigmaG),
-              ) %>% 
-            group_by(Simu,Productivity,Ind) %>% 
-            mutate(
-              #LE     =sum(Survival)/12,
-              EUtil  =(sum(IUtil)+IUtil-cumsum(IUtil))/Survival,
-              EUtil.d=(sum(IUtil.d)+IUtil.d-cumsum(IUtil.d))/Survival) %>% 
-            group_by(Productivity,Ind) %>% 
-            mutate(Li=1-(1+(EUtil[Simu=="Exp5"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
-            subset(Age2 %in% c(20,30,40,50,60)) %>%
-            group_by(Simu,Productivity,Age2) %>% 
-            summarize(Lambda=round(100*mean(Li),2)) %>% spread(Simu, Lambda) 
+        subset(Age<1200 & !(Simu %in% c("Benchmark","Exp1","Exp2","Exp3","Exp4"))) %>%
+        mutate(sigmaG = ifelse(Simu %in% c("Exp5", "Exp6", "Exp7", "Exp8"), sigmaG11, sigmaG01)) %>%
+        group_by(Simu,Productivity,Ind) %>% 
+        mutate(
+          IUtil  =Survival*((Consumption^(1-1/sigmaG))-1)/(1-1/sigmaG),
+          IUtil.d=Survival*(Consumption^(1-1/sigmaG))/(1-1/sigmaG),
+          ) %>% 
+        group_by(Simu,Productivity,Ind) %>% 
+        mutate(
+          #LE     =sum(Survival)/12,
+          EUtil  =(sum(IUtil)+IUtil-cumsum(IUtil))/Survival,
+          EUtil.d=(sum(IUtil.d)+IUtil.d-cumsum(IUtil.d))/Survival) %>% 
+        group_by(Productivity,Ind) %>% 
+        mutate(Li=1-(1+(EUtil[Simu=="Exp5"]-EUtil)/EUtil.d)^(1/(1-1/sigmaG))) %>% 
+        mutate(Simu = case_when( 
+                            Simu=="Exp5" ~ "Benchmark",
+                            Simu=="Exp6" ~ "Exp1",
+                            Simu=="Exp7" ~ "Exp2",
+                            Simu=="Exp8" ~ "Exp3")
+            ) %>%          
+        subset(Age2 %in% c(20,30,40,50,60)) %>%
+        group_by(Simu,Productivity,Age2) %>% 
+        summarize(Lambda=round(100*mean(Li),2), .groups = "drop") %>% spread(Simu, Lambda) 
     
     kableExtra:::kbl(
       tbl5,
       booktabs = T,
       caption="Table 5: Welfare effects of pension reforms and ageing by exact age. Ref=Benchmark (mean values, in %)",
-      format="simple") #%>%
-      #kableExtra:::kable_classic(full_width = F, html_font = "Cambria")
+      format="simple") 
     
     """
 
@@ -276,7 +280,7 @@ function f_results_tableA3(data)
     @rput data
     R"""    
 
-    install.packages("radiant.data", repos = "https://cloud.r-project.org")
+    #install.packages("radiant.data", repos = "https://cloud.r-project.org")
     
     library(tidyr)
     library(dplyr)
@@ -377,6 +381,239 @@ function f_results_tableA3(data)
 
 end
 
+# -------------------------------------------------------------------------------------
+# Table A5: 
+# -------------------------------------------------------------------------------------
+function f_results_tableA5(data)
+    
+    @rput data
+    R"""
+    #suppressWarnings({
+    #install.packages("stargazer",  repos = "https://cloud.r-project.org")
+    #install.packages("kableExtra", repos = "https://cloud.r-project.org")
+    #})
+    library("stargazer")
+    library(tidyr)
+    library(dplyr)
+    library(kableExtra)
+    
+    Prod <- data %>% subset(Simu=="Exp5") %>% select(Productivity) %>% unique()
+    
+    # ---------------- FIRST PRODUCTIVITY LEVEL ----------------
+    prod1 <- as.numeric(Prod$Productivity[1])
+    
+    # All ages
+    df_all <- data %>%
+      mutate(Mx = -100000 * 12 * log(1 - MortalityJob / 100000)) %>%
+      subset(Employment == 1 & Age2 %in% 20:65 & Simu == "Exp5" & Productivity == prod1)
+    mod_all <- lm(log(Wages) ~ MortalityJob + factor(Age2) - 1, data = df_all)
+    tbA5.all1 <- summary(mod_all)
+    
+    df_all2 <- data %>%
+      subset(Employment == 1 & Age2 %in% 20:64 & Simu == "Exp5" & Productivity == prod1)
+    tbA5.all2 <- df_all2 %>%
+      summarize(w = mean(Wages), VSL = tbA5.all1$coefficients[1,1] * w * 0.1, VOL = mean(VOL) / 1e6)
+    
+    tbA5.all <- cbind(t(tbA5.all1$coefficients[1,1:2]), tbA5.all2)
+    
+    # Age 40
+    df40 <- subset(data, Employment == 1 & Age2 == 40 & Simu == "Exp5" & Productivity == prod1)
+    mod40 <- lm(log(Wages) ~ MortalityJob, data = df40)
+    tbA5.40_1 <- summary(mod40)
+    tbA5.40_2 <- df40 %>%
+      summarize(w = mean(Wages), VSL = coef(mod40)[2] * w * 0.1, VOL = mean(VOL) / 1e6)
+    tbA5.40 <- cbind(t(tbA5.40_1$coefficients[2,1:2]), tbA5.40_2)
+    
+    # Age 50
+    df50 <- subset(data, Employment == 1 & Age2 == 50 & Simu == "Exp5" & Productivity == prod1)
+    mod50 <- lm(log(Wages) ~ MortalityJob, data = df50)
+    tbA5.50_1 <- summary(mod50)
+    tbA5.50_2 <- df50 %>%
+      summarize(w = mean(Wages), VSL = coef(mod50)[2] * w * 0.1, VOL = mean(VOL) / 1e6)
+    tbA5.50 <- cbind(t(tbA5.50_1$coefficients[2,1:2]), tbA5.50_2)
+    
+    # Age 60
+    df60 <- subset(data, Employment == 1 & Age2 == 60 & Simu == "Exp5" & Productivity == prod1)
+    mod60 <- lm(log(Wages) ~ MortalityJob, data = df60)
+    tbA5.60_1 <- summary(mod60)
+    tbA5.60_2 <- df60 %>%
+      summarize(w = mean(Wages), VSL = coef(mod60)[2] * w * 0.1, VOL = mean(VOL) / 1e6)
+    tbA5.60 <- cbind(t(tbA5.60_1$coefficients[2,1:2]), tbA5.60_2)
+    
+    # Combine and format table
+    tbA5 <- data.frame(t(tbA5.all), t(tbA5.40), t(tbA5.50), t(tbA5.60))
+    tbA5$Variable <- row.names(tbA5)
+    colnames(tbA5) <- c("All", "Age=40", "Age=50", "Age=60", "Variable")
+    
+    tbA5.final <- tbA5 %>%
+      gather(Case, Value, All:`Age=60`, factor_key = TRUE) %>%
+      spread(Variable, Value) %>%
+      select(Case, Estimate, `Std. Error`, w, VSL, VOL) %>%
+      mutate(across(c(Estimate, VSL, VOL), round, 2),
+             w = round(w, 0)) %>%
+      gather(Variable, Value, Estimate:VOL, factor_key = TRUE) %>%
+      spread(Case, Value)
+    
+    kableExtra:::kbl(
+      tbA5.final,
+      booktabs = TRUE,
+      caption = "A5, Value of a statistical life overall and by age — Productivity Level 1",
+      format = "simple"
+    ) %>% print()
+    
+    
+    # ---------------- SECOND PRODUCTIVITY LEVEL ----------------
+    prod2 <- as.numeric(Prod$Productivity[2])
+    
+    # All ages
+    df_allB <- data %>%
+      mutate(Mx = -100000 * 12 * log(1 - MortalityJob / 100000)) %>%
+      subset(Employment == 1 & Age2 %in% 20:65 & Simu == "Exp5" & Productivity == prod2)
+    mod_allB <- lm(log(Wages) ~ MortalityJob + factor(Age2) - 1, data = df_allB)
+    tbB5.all1 <- summary(mod_allB)
+    
+    df_all2B <- data %>%
+      subset(Employment == 1 & Age2 %in% 20:64 & Simu == "Exp5" & Productivity == prod2)
+    tbB5.all2 <- df_all2B %>%
+      summarize(w = mean(Wages), VSL = tbB5.all1$coefficients[1,1] * w * 0.1, VOL = mean(VOL) / 1e6)
+    
+    tbB5.all <- cbind(t(tbB5.all1$coefficients[1,1:2]), tbB5.all2)
+    
+    # Age 40
+    df40B <- subset(data, Employment == 1 & Age2 == 40 & Simu == "Exp5" & Productivity == prod2)
+    mod40B <- lm(log(Wages) ~ MortalityJob, data = df40B)
+    tbB5.40_1 <- summary(mod40B)
+    tbB5.40_2 <- df40B %>%
+      summarize(w = mean(Wages), VSL = coef(mod40B)[2] * w * 0.1, VOL = mean(VOL) / 1e6)
+    tbB5.40 <- cbind(t(tbB5.40_1$coefficients[2,1:2]), tbB5.40_2)
+    
+    # Age 50
+    df50B <- subset(data, Employment == 1 & Age2 == 50 & Simu == "Exp5" & Productivity == prod2)
+    mod50B <- lm(log(Wages) ~ MortalityJob, data = df50B)
+    tbB5.50_1 <- summary(mod50B)
+    tbB5.50_2 <- df50B %>%
+      summarize(w = mean(Wages), VSL = coef(mod50B)[2] * w * 0.1, VOL = mean(VOL) / 1e6)
+    tbB5.50 <- cbind(t(tbB5.50_1$coefficients[2,1:2]), tbB5.50_2)
+    
+    # Age 60
+    df60B <- subset(data, Employment == 1 & Age2 == 60 & Simu == "Exp5" & Productivity == prod2)
+    mod60B <- lm(log(Wages) ~ MortalityJob, data = df60B)
+    tbB5.60_1 <- summary(mod60B)
+    tbB5.60_2 <- df60B %>%
+      summarize(w = mean(Wages), VSL = coef(mod60B)[2] * w * 0.1, VOL = mean(VOL) / 1e6)
+    tbB5.60 <- cbind(t(tbB5.60_1$coefficients[2,1:2]), tbB5.60_2)
+    
+    # Combine and format table
+    tbB5 <- data.frame(t(tbB5.all), t(tbB5.40), t(tbB5.50), t(tbB5.60))
+    tbB5$Variable <- row.names(tbB5)
+    colnames(tbB5) <- c("All", "Age=40", "Age=50", "Age=60", "Variable")
+    
+    tbB5.final <- tbB5 %>%
+      gather(Case, Value, All:`Age=60`, factor_key = TRUE) %>%
+      spread(Variable, Value) %>%
+      select(Case, Estimate, `Std. Error`, w, VSL, VOL) %>%
+      mutate(across(c(Estimate, VSL, VOL), round, 2),
+             w = round(w, 0)) %>%
+      gather(Variable, Value, Estimate:VOL, factor_key = TRUE) %>%
+      spread(Case, Value)
+    
+    kableExtra:::kbl(
+      tbB5.final,
+      booktabs = TRUE,
+      caption = "A5, Value of a statistical life overall and by age — Productivity Level 2",
+      format = "simple"
+    ) %>% print()
+    """
+
+end
+
+
+# -------------------------------------------------------------------------------------
+# Table A6: 
+# -------------------------------------------------------------------------------------
+function f_results_tableA6(data)
+    
+    @rput data
+    R"""
+    #suppressWarnings(
+    #install.packages("stargazer", repos = "https://cloud.r-project.org")
+    #)
+    library("stargazer")
+    library(tidyr)
+    library(dplyr)
+
+    Prod <- data %>% subset(Simu=="Exp5") %>% select(Productivity) %>% unique()
+    
+    # ---------------- FIRST PRODUCTIVITY LEVEL ----------------
+    prod1 <- as.numeric(Prod$Productivity[1])
+    
+    # log(MortalityJob)~log(Assets)
+    # Age 50
+    ols.1<-data %>% 
+        subset(Employment==1 & (Age2==50) & (Simu=="Exp5") & (Productivity==prod1)) %>% 
+        lm(formula=log(MortalityJob)~log(Assets)) 
+    # Age 55
+    ols.2<-data %>% 
+        subset(Employment==1 & (Age2==55) & (Simu=="Exp5") & (Productivity==prod1)) %>% 
+        lm(formula=log(MortalityJob)~log(Assets)) 
+    # Age 60
+    ols.3<-data %>% 
+        subset(Employment==1 & (Age2==60) & (Simu=="Exp5") & (Productivity==prod1)) %>% 
+        lm(formula=log(MortalityJob)~log(Assets)) 
+    
+    # log(Wages)~log(Assets)
+    # Age 50
+    olsW.1<-data %>% 
+        subset(Employment==1 & (Age2==50) & (Simu=="Exp5") & (Productivity==prod1)) %>% 
+        lm(formula=log(Wages)~log(Assets))
+    # Age 55
+    olsW.2<-data %>% 
+        subset(Employment==1 & (Age2==55) & (Simu=="Exp5") & (Productivity==prod1)) %>% 
+        lm(formula=log(Wages)~log(Assets))
+    # Age 60
+    olsW.3<-data %>% 
+        subset(Employment==1 & (Age2==60) & (Simu=="Exp5") & (Productivity==prod1)) %>% 
+        lm(formula=log(Wages)~log(Assets))
+    
+    stargazer(ols.1,  ols.2,  ols.3,  title="Marginal effect of wealth on on-the-job mortality and wages by skill group: Low-skilled", align=TRUE, type="text", out.header=TRUE) #%>% print()
+    stargazer(olsW.1, olsW.2, olsW.3, title="Marginal effect of wealth on on-the-job mortality and wages by skill group: Low-skilled", align=TRUE, type="text", out.header=TRUE) #%>% print()
+
+    # ---------------- SECOND PRODUCTIVITY LEVEL ----------------
+    prod2 <- as.numeric(Prod$Productivity[2])
+    
+    # log(MortalityJob)~log(Assets)
+    # Age 50
+    olsB.1<-data %>% 
+        subset(Employment==1 & (Age2==50) & (Simu=="Exp5") & (Productivity==prod2)) %>% 
+        lm(formula=log(MortalityJob)~log(Assets)) 
+    # Age 55
+    olsB.2<-data %>% 
+        subset(Employment==1 & (Age2==55) & (Simu=="Exp5") & (Productivity==prod2)) %>% 
+        lm(formula=log(MortalityJob)~log(Assets)) 
+    # Age 60
+    olsB.3<-data %>% 
+        subset(Employment==1 & (Age2==60) & (Simu=="Exp5") & (Productivity==prod2)) %>% 
+        lm(formula=log(MortalityJob)~log(Assets)) 
+    
+    # log(Wages)~log(Assets)
+    # Age 50
+    olsWB.1<-data %>% 
+        subset(Employment==1 & (Age2==50) & (Simu=="Exp5") & (Productivity==prod2)) %>% 
+        lm(formula=log(Wages)~log(Assets))
+    # Age 55
+    olsWB.2<-data %>% 
+        subset(Employment==1 & (Age2==55) & (Simu=="Exp5") & (Productivity==prod2)) %>% 
+        lm(formula=log(Wages)~log(Assets))
+    # Age 60
+    olsWB.3<-data %>% 
+        subset(Employment==1 & (Age2==60) & (Simu=="Exp5") & (Productivity==prod2)) %>% 
+        lm(formula=log(Wages)~log(Assets))
+    
+    stargazer(olsB.1,  olsB.2,  olsB.3,  title="Marginal effect of wealth on on-the-job mortality and wages by skill group: High-skilled ", align=TRUE, type="text", out.header=TRUE) #%>% print()
+    stargazer(olsWB.1, olsWB.2, olsWB.3, title="Marginal effect of wealth on on-the-job mortality and wages by skill group: High-skilled", align=TRUE, type="text", out.header=TRUE) #%>% print()    
+    """
+
+end
 
 
 # -------------------------------------------------------------------------------------
@@ -393,7 +630,8 @@ function f_results_tableA7(data)
     AdjFactor<-(1000/(12*500))
     popgrowth<-1.00^(1/12)
     
-    tblA7.top<-data %>% subset(Simu %in% c("Exp5","Exp6","Exp7","Exp8")) %>%
+    tblA7.top<-data %>% 
+      subset(Simu %in% c("Exp5","Exp6","Exp7","Exp8")) %>%
       mutate(popC=popgrowth^(1-Age)) %>%
       group_by(Simu,Productivity) %>% 
       summarize(
@@ -401,7 +639,7 @@ function f_results_tableA7(data)
         L=round(sum(Survival*popC*ifelse(Employment==1,1,0))*AdjFactor,0),
         U=round(sum(Survival*popC*ifelse(Employment==0,1,0))*AdjFactor,0),
         R=round(sum(Survival*popC*ifelse(Employment==2,1,0))*AdjFactor,0),
-        U_rate=round(100*U/(L+U),2)) %>%   
+        U_rate=round(100*U/(L+U),2), .groups = "drop") %>%   
       gather(Variable, Value, N:U_rate, factor_key=TRUE) %>% 
       spread(Simu, Value) 
     
@@ -409,7 +647,7 @@ function f_results_tableA7(data)
       tblA7.top,
       booktabs = T,
       format = "pandoc",
-      caption="Table A7: Descriptive statistics of Experiment 5 by skill group (Period: Month)") 
+      caption="Table A7: Descriptive statistics of four alternative simulations with two skill groups (Period: Month)")
     
     
     
@@ -445,40 +683,47 @@ function f_results_tableA7(data)
         vol.mean=round(weighted.mean(VOL,w=weight)/1000,0),
         vol.sd=round(radiant.data::weighted.sd(x = VOL, wt = weight)/1000,0),
         t.mean=weighted.mean(Tax,w=weight),
-        r.mean=round(100*(0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)),2)) %>%  
+        r.mean=round(100*(0.33*(0.66/mean(F.L))^(2.0)-(1.05^(1/12)-1.0)),2), .groups = "drop") %>%  
       gather(Variable, Value, mT.mean:r.mean, factor_key=TRUE) 
     
     tblA7.bottom$type<-c(rep(c(rep("Mean",8),rep("SD",8)),8),rep(c(rep("Mean",8)),2))
-    tblA7.bottom<-tblA7.bottom %>% mutate(Variable=case_when(
-        Variable=="mT.mean" ~ "1.mT",
-        Variable=="mT.sd"   ~ "1.mT",
-        Variable=="m.mean"  ~ "2.m",
-        Variable=="m.sd"    ~ "2.m",
-        Variable=="mu.mean" ~ "3.mu",
-        Variable=="mu.sd"   ~ "3.mu",
-        Variable=="w.mean"  ~ "4.w",
-        Variable=="w.sd"    ~ "4.w",
-        Variable=="y.mean"  ~ "5.y",
-        Variable=="y.sd"    ~ "5.y",    
-        Variable=="c.mean"  ~ "6.c",
-        Variable=="c.sd"    ~ "6.c",    
-        Variable=="a.mean"  ~ "7.a",
-        Variable=="a.sd"    ~ "7.a",    
-        Variable=="vol.mean"~ "8.vol",
-        Variable=="vol.sd"  ~ "8.vol",    
-        Variable=="t.mean"  ~ "9.t",
-        Variable=="r.mean"  ~ "10.r")) %>% spread(type, Value) 
-    
-    
+    tblA7.bottom<-tblA7.bottom %>% 
+        mutate(Variable=case_when(
+            Variable=="mT.mean" ~ "1.mT",
+            Variable=="mT.sd"   ~ "1.mT",
+            Variable=="m.mean"  ~ "2.m",
+            Variable=="m.sd"    ~ "2.m",
+            Variable=="mu.mean" ~ "3.mu",
+            Variable=="mu.sd"   ~ "3.mu",
+            Variable=="w.mean"  ~ "4.w",
+            Variable=="w.sd"    ~ "4.w",
+            Variable=="y.mean"  ~ "5.y",
+            Variable=="y.sd"    ~ "5.y",    
+            Variable=="c.mean"  ~ "6.c",
+            Variable=="c.sd"    ~ "6.c",    
+            Variable=="a.mean"  ~ "7.a",
+            Variable=="a.sd"    ~ "7.a",    
+            Variable=="vol.mean"~ "8.vol",
+            Variable=="vol.sd"  ~ "8.vol",    
+            Variable=="t.mean"  ~ "9.t",
+            Variable=="r.mean"  ~ "10.r")) %>% spread(type, Value) %>% print()
+        
     kableExtra:::kbl(
-      cbind(
-        tblA7.bottom %>% subset(Productivity==unique(tblA7.bottom$Productivity)[1]) %>% select(Variable,Mean,SD),
-        tblA7.bottom %>% subset(Productivity==unique(tblA7.bottom$Productivity)[2]) %>% select(Mean,SD)
-            ),
+    tblA7.bottom %>% subset(Productivity==unique(tblA7.bottom$Productivity)[1]),
       booktabs = T,
       format = "pandoc",
-      col.names=c("",paste0(rep(c("","Mean","SD"),2))),
-      caption="Table A7: Descriptive statistics of Experiment 5 by skill group (Period: Month)") 
+      #col.names=c("Simu", "Variable","Mean","SD"),
+      caption="Table A7: Descriptive statistics of four alternative simulations with two skill groups (Period: Month): Low-skilled"
+    ) %>% print()   
+
+    kableExtra:::kbl(
+    tblA7.bottom %>% subset(Productivity==unique(tblA7.bottom$Productivity)[2]),
+      booktabs = T,
+      format = "pandoc",
+      #col.names=c("Simu", "Variable","Mean","SD"),
+      caption="Table A7: Descriptive statistics of four alternative simulations with two skill groups (Period: Month): High-skilled"
+    ) %>% print()   
+    
     
     """
 
@@ -502,6 +747,11 @@ function f_results_figure4(data)
     library("ggplot2")
     library("ggpmisc")
     library("gridExtra")
+
+    suppressPackageStartupMessages(library(dplyr))
+    suppressPackageStartupMessages(library(ggplot2))
+    suppressPackageStartupMessages(library(ggpmisc))
+    suppressPackageStartupMessages(library(gridExtra))    
     
     # Income data: CPS data
     
@@ -798,7 +1048,7 @@ function f_results_figure6(data)
     subset(Employment==1 & !(Simu %in% c("Exp4","Exp5","Exp6","Exp7","Exp8"))) %>% 
     mutate(Simulation=Simu) %>% 
     group_by(Simulation,Age2) %>% 
-    summarize(MortalityJ=mean(MortalityJob)) %>% 
+    summarize(MortalityJ=mean(MortalityJob), .groups = "drop") %>% 
     ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+
       geom_line(aes(color=Simulation,linetype=Simulation),cex=0.75)+
       scale_color_discrete(
@@ -847,7 +1097,7 @@ function f_results_figure7(data)
     fig7a<-datanew %>% 
       subset(Productivity==unique(datanew$Productivity)[1]) %>% 
       group_by(Simu,Age2) %>%
-      summarize(MortalityJ=mean(MortalityJob)) %>%
+      summarize(MortalityJ=mean(MortalityJob), .groups = "drop") %>%
       ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+
       geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+
       scale_color_discrete(
@@ -873,7 +1123,7 @@ function f_results_figure7(data)
     fig7b<-datanew %>% 
       subset(Productivity==unique(datanew$Productivity)[2]) %>% 
       group_by(Simu,Age2) %>%
-      summarize(MortalityJ=mean(MortalityJob)) %>%
+      summarize(MortalityJ=mean(MortalityJob), .groups = "drop") %>%
       ggplot(aes(x=Age2,y=-100000*12*log(1-MortalityJ/100000)))+
       geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+
       scale_color_discrete(
@@ -901,7 +1151,7 @@ function f_results_figure7(data)
       mutate(MortalityJ=mean(MortalityJob),
              Mort=-100000*12*log(1-MortalityJ/100000)) %>%
       group_by(Simu,Age2) %>%  
-      summarize(Mort2=Mort[Productivity==unique(datanew$Productivity)[1]]-Mort[Productivity==unique(datanew$Productivity)[2]]) %>%
+      summarize(Mort2=Mort[Productivity==unique(datanew$Productivity)[1]]-Mort[Productivity==unique(datanew$Productivity)[2]], .groups = "drop") %>%
       ggplot(aes(x=Age2,y=Mort2))+
       geom_line(aes(color=factor(Simu),linetype=factor(Simu)),cex=0.75)+
       scale_color_discrete(

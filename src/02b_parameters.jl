@@ -18,8 +18,8 @@ Iter_Sensitivity = 1
 # Elasticity output to on-the-job risk
 σys_vector    = [0.0145,0.0145,0.0148,0.0158]   
 σys           = σys_vector[Iter_Sensitivity]  # Elasticity output to on-the-job risk
-σys_l         = 0.0210                # Elasticity output to on-the-job risk for low skills
-σys_h         = 0.0025                # Elasticity output to on-the-job risk for high skills
+σys_l         = 0.0238                # Elasticity output to on-the-job risk for low skills
+σys_h         = 0.0029                # Elasticity output to on-the-job risk for high skills
 
 # ----------------------------------- Absence rates ----------------------------------------
 λs_vector     = [0.0,8.160833,13.90333,46.90417] 
@@ -54,7 +54,7 @@ function mutable_struct(Scenario,sample_size,Par_U::Params_Unmut)
 
     # Inverse elasticity of substitution (note: modify the program)
     σCs    = if Scenario>10
-                0.8900
+                0.8685
              else 
                 0.8685                
              end

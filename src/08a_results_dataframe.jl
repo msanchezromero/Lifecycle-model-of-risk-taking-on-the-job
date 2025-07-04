@@ -12,6 +12,7 @@ sigmaG11 = ParM11.σC
 @rput sigmaG11
 R"""
 library("dplyr")
+
 Sigma  <- c(paste0(sigmaG01),paste0(sigmaG11))
 Lambda <- c("_Lambda612.84","_Lambda710.769996","_Lambda779.67996","_Lambda1175.69004")
 
@@ -23,9 +24,17 @@ Simulations <- c("benchmark",
                    "TwoGroupsS2",
                    "TwoGroupsS5",
                    "TwoGroupsS6")
-Simu <- c("Benchmark","Exp1","Exp2","Exp3","Exp5","Exp6","Exp7","Exp8")
 
-path <-"../results/Results_Sigma"
+Simu        <- c("Benchmark",
+                    "Exp1",
+                    "Exp2",
+                    "Exp3",
+                    "Exp5",
+                    "Exp6",
+                    "Exp7",
+                    "Exp8")
+
+path <-"../results/Results_"
 
 dfT  <- c()
 for (i in 1:length(Simulations)){

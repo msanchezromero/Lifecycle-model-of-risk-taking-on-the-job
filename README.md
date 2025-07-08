@@ -32,6 +32,9 @@ This program generates the economic results for the following set of simulations
 
 
 **Program structure**
+
+Use the main Jupyter notebook to generate the simulation results and obtain Figures 4,5,6,7 and Tables 2,3,4,5
+
 ```text
 Model/
 ├── notebooks/                                              # Jupyter notebooks

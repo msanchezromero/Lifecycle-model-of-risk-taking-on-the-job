@@ -1,6 +1,5 @@
 # Lifecycle model of risk taking on the job
-![image](https://github.com/user-attachments/assets/ccd46c1d-b218-4ff5-895b-5b15a8e14ff9)
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15838972.svg)](https://doi.org/10.5281/zenodo.15838972)
 This model 
 
 

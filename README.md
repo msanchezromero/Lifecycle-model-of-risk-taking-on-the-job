@@ -1,4 +1,6 @@
 # Lifecycle model of risk taking on the job
+![image](https://github.com/user-attachments/assets/ccd46c1d-b218-4ff5-895b-5b15a8e14ff9)
+
 This model 
 
 

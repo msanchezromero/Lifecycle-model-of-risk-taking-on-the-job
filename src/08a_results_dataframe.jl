@@ -29,16 +29,20 @@ Simu        <- c("Benchmark",
                     "Exp1",
                     "Exp2",
                     "Exp3",
-                    "Exp5",
-                    "Exp6",
-                    "Exp7",
-                    "Exp8")
+                    "Exp5", # This simulation is the benchmark case for two skill groups
+                    "Exp6", # This simulation is Exp1 with two skill groups
+                    "Exp7", # This simulation is Exp2 with two skill groups
+                    "Exp8") # This simulation is Exp3 with two skill groups
 
-path <-"../results/Results_"
+path <-"../results/Results_Sigma"
 
 dfT  <- c()
 for (i in 1:length(Simulations)){
-  df      <- read.csv(file=paste0(path,ifelse(i>4,Sigma[2],Sigma[1]),Lambda[1],"_",Simulations[i],".csv"))
+  # -----------------------------------------------------------------------------------------------------------
+  # Uncomment if the file is saved as CSV  
+  # df      <- read.csv(file=paste0(path,ifelse(i>4,Sigma[2],Sigma[1]),Lambda[1],"_",Simulations[i],".csv"))
+  # -----------------------------------------------------------------------------------------------------------
+  df      <- readRDS(file=paste0(path,ifelse(i>4,Sigma[2],Sigma[1]),Lambda[1],"_",Simulations[i],".rds"))    
   df$Simu <- Simu[i]
   dfT     <- rbind(dfT,df)
 }

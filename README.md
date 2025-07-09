@@ -56,9 +56,9 @@ Model/
 │        ├── 08a_results_dataframe.jl                       # Compile all dataframes
 │        └── 08b_results_tables_and_figures.jl              # Generates results for Figures 4,5,6,7 and Tables 2,3,4,5
 │
-├── results/                                                # Output datasets (all csv/rds files)
-│
 ├── replication files/                                      # R codes for the econometric estimations
+│
+├── results/                                                # Output datasets (all csv/rds files)
 │
 ├── plots/                                                  # Output plots of the article
 └── README.txt

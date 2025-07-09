@@ -58,6 +58,8 @@ Model/
 │
 ├── results/                                                # Output datasets (all csv/rds files)
 │
+├── replication files/                                      # R codes for the econometric estimations
+│
 ├── plots/                                                  # Output plots of the article
 └── README.txt
 ```

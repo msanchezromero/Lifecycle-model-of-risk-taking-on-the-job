@@ -40,6 +40,11 @@ Use the main Jupyter notebook to generate the simulation results and obtain Figu
 Model/
 ├── empirical_analysis/                                     # R codes for the econometric estimations
 |   ├── 00_Readme.txt                                       # Readme file for the empirical analysis
+|   ├── 01_prepare_CPS.R                                    
+|   ├── 02_prepare_ASEC.R                                   
+|   ├── 03_prepare_CFOI.R                                   
+|   ├── 04_mortality_regression.R                           
+|   ├── 05_mortality_regression_by_skill.R                  
 |   ├── data/                                                
 |   ├── figures/                                             
 │   └── raw/                                                 

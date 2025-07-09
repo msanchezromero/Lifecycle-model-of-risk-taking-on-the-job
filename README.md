@@ -39,6 +39,10 @@ Use the main Jupyter notebook to generate the simulation results and obtain Figu
 ```text
 Model/
 ├── empirical_analysis/                                     # R codes for the econometric estimations
+|   ├── 00_Readme.txt                                       # Readme file for the empirical analysis
+|   ├── data/                                                
+|   ├── figures/                                             
+│   └── raw/                                                 
 │
 ├── notebooks/                                              # Jupyter notebooks
 |   ├── A_lifecycle_model_of_risk_taking_on_the_job.ipynb   # Working notebook

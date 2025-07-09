@@ -1,5 +1,5 @@
 # Lifecycle model of risk taking on the job
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15845425.svg)](https://doi.org/10.5281/zenodo.15845425)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15838971.svg)](https://doi.org/10.5281/zenodo.15838971)
 This model 
 
 
@@ -55,6 +55,8 @@ Model/
 │        ├── 07_database.jl                                 # Generates the results database
 │        ├── 08a_results_dataframe.jl                       # Compile all dataframes
 │        └── 08b_results_tables_and_figures.jl              # Generates results for Figures 4,5,6,7 and Tables 2,3,4,5
+│
+├── replication files/                                      # R codes for the econometric estimations
 │
 ├── results/                                                # Output datasets (all csv/rds files)
 │

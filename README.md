@@ -1,3 +1,6 @@
+**Publication:** 
+Kerndler, M., Prskawetz, A. & Sánchez-Romero, M. A life-cycle model of risk-taking on the job. J Popul Econ 38, 62 (2025). https://doi.org/10.1007/s00148-025-01118-y
+
 # Lifecycle model of risk taking on the job
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15838971.svg)](https://doi.org/10.5281/zenodo.15838971)
 This model 

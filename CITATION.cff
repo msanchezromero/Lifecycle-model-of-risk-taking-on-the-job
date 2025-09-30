@@ -1,0 +1,19 @@
+cff-version: 1.4.0
+message: "If you use this work, please cite the following article:"
+authors:
+  - family-names: Kerndler
+    given-names: Michael
+  - family-names: Prskawetz
+    given-names: Alexia
+  - family-names: Sánchez-Romero
+    given-names: Miguel
+title: "A life-cycle model of risk-taking on the job"
+version: "1.0.0"
+doi: 10.1007/s00148-025-01118-y
+date-released: 2025-01-01
+url: https://doi.org/10.1007/s00148-025-01118-y
+type: article
+journal: "Journal of Population Economics"
+volume: 38
+issue: 62
+year: 2025
